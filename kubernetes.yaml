@@ -1,0 +1,80 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: threat-api-config
+data:
+  PORT: "8080"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: threat-api-secret
+type: Opaque
+stringData:
+  API_KEY: "secret123"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: threat-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: threat-api
+  template:
+    metadata:
+      labels:
+        app: threat-api
+    spec:
+      containers:
+      - name: threat-api
+        image: your-registry/threat-api:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+              name: threat-api-config
+              key: PORT
+        - name: API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: threat-api-secret
+              key: API_KEY
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: threat-api-service
+spec:
+  selector:
+    app: threat-api
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
+  type: LoadBalancer

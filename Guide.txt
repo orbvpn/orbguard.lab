@@ -1,0 +1,18 @@
+# Build image
+docker build -t threat-intelligence-api .
+
+# Run container
+docker run -d \
+  -p 8080:8080 \
+  -e API_KEY="your-secret-key" \
+  --name threat-api \
+  threat-intelligence-api
+
+# Or use docker-compose
+docker-compose up -d
+
+# View logs
+docker logs -f threat-api
+
+# Stop
+docker stop threat-api
