@@ -1,24 +1,113 @@
-version: "3.8"
+version: '3.8'
 
 services:
-  api:
+  # OrbGuard Lab API
+  orbguard-lab:
     build: .
+    container_name: orbguard-lab
     ports:
-      - "8080:8080"
+      - "8090:8090"   # REST API
+      - "9002:9002"   # gRPC
     environment:
-      - API_KEY=${API_KEY:-default-dev-key}
-      - PORT=8080
+      - ORBGUARD_APP_ENVIRONMENT=development
+      - ORBGUARD_DATABASE_HOST=postgres
+      - ORBGUARD_DATABASE_PORT=5432
+      - ORBGUARD_DATABASE_USER=orbguard
+      - ORBGUARD_DATABASE_PASSWORD=orbguard_secret
+      - ORBGUARD_DATABASE_DBNAME=orbguard_lab
+      - ORBGUARD_DATABASE_SCHEMA=orbguard_lab
+      - ORBGUARD_REDIS_HOST=redis
+      - ORBGUARD_REDIS_PORT=6379
+      - ORBGUARD_NEO4J_URI=bolt://neo4j:7687
+      - ORBGUARD_NEO4J_USERNAME=neo4j
+      - ORBGUARD_NEO4J_PASSWORD=neo4j_secret
+      - ORBGUARD_JWT_SECRET=dev-jwt-secret-change-in-production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - orbguard-network
     restart: unless-stopped
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: orbguard-postgres
+    environment:
+      - POSTGRES_USER=orbguard
+      - POSTGRES_PASSWORD=orbguard_secret
+      - POSTGRES_DB=orbguard_lab
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
     healthcheck:
-      test:
-        [
-          "CMD",
-          "wget",
-          "--quiet",
-          "--tries=1",
-          "--spider",
-          "http://localhost:8080/health",
-        ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      test: ["CMD-SHELL", "pg_isready -U orbguard -d orbguard_lab"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - orbguard-network
+    restart: unless-stopped
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: orbguard-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - orbguard-network
+    restart: unless-stopped
+
+  # Neo4j Graph Database (optional, for threat graph)
+  neo4j:
+    image: neo4j:5-community
+    container_name: orbguard-neo4j
+    environment:
+      - NEO4J_AUTH=neo4j/neo4j_secret
+      - NEO4J_PLUGINS=["apoc"]
+    volumes:
+      - neo4j-data:/data
+      - neo4j-logs:/logs
+    ports:
+      - "7474:7474"   # HTTP
+      - "7687:7687"   # Bolt
+    networks:
+      - orbguard-network
+    restart: unless-stopped
+
+  # NATS JetStream (for event streaming)
+  nats:
+    image: nats:2-alpine
+    container_name: orbguard-nats
+    command: "--jetstream --store_dir /data"
+    volumes:
+      - nats-data:/data
+    ports:
+      - "4222:4222"   # Client
+      - "8222:8222"   # Monitoring
+    networks:
+      - orbguard-network
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  redis-data:
+  neo4j-data:
+  neo4j-logs:
+  nats-data:
+
+networks:
+  orbguard-network:
+    driver: bridge
