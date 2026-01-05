@@ -263,6 +263,21 @@ func Load(configPath string) (*Config, error) {
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.AutomaticEnv()
 
+	// Bind nested env vars explicitly (viper doesn't auto-bind nested struct fields)
+	v.BindEnv("redis.tls", "ORBGUARD_REDIS_TLS")
+	v.BindEnv("redis.host", "ORBGUARD_REDIS_HOST")
+	v.BindEnv("redis.port", "ORBGUARD_REDIS_PORT")
+	v.BindEnv("redis.password", "ORBGUARD_REDIS_PASSWORD")
+	v.BindEnv("database.host", "ORBGUARD_DATABASE_HOST")
+	v.BindEnv("database.port", "ORBGUARD_DATABASE_PORT")
+	v.BindEnv("database.user", "ORBGUARD_DATABASE_USER")
+	v.BindEnv("database.password", "ORBGUARD_DATABASE_PASSWORD")
+	v.BindEnv("database.dbname", "ORBGUARD_DATABASE_DBNAME")
+	v.BindEnv("database.sslmode", "ORBGUARD_DATABASE_SSLMODE")
+	v.BindEnv("neo4j.enabled", "ORBGUARD_NEO4J_ENABLED")
+	v.BindEnv("nats.enabled", "ORBGUARD_NATS_ENABLED")
+	v.BindEnv("app.environment", "ORBGUARD_APP_ENVIRONMENT")
+
 	// Read config file
 	if err := v.ReadInConfig(); err != nil {
 		return nil, fmt.Errorf("failed to read config file: %w", err)
