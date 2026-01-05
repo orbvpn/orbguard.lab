@@ -59,6 +59,15 @@ type IndicatorRepository interface {
 	UpdateSourceAfterError(ctx context.Context, sourceID uuid.UUID, errMsg string) error
 }
 
+// EventPublisher defines the interface for publishing threat events
+type EventPublisher interface {
+	// PublishNewThreat publishes an event for a new threat indicator
+	PublishNewThreat(ctx context.Context, indicator *models.Indicator, sourceSlug, sourceName string) error
+
+	// PublishSourceUpdate publishes a source update completion event
+	PublishSourceUpdate(ctx context.Context, sourceSlug, sourceName string, success bool, newCount, updatedCount int, duration time.Duration, err error) error
+}
+
 // Aggregator orchestrates fetching from all sources
 type Aggregator struct {
 	config       config.AggregationConfig
@@ -68,6 +77,7 @@ type Aggregator struct {
 	deduplicator *Deduplicator
 	scorer       *Scorer
 	cache        *cache.RedisCache
+	publisher    EventPublisher
 	logger       *logger.Logger
 
 	mu           sync.RWMutex
@@ -104,6 +114,14 @@ func (a *Aggregator) RegisterConnector(connector SourceConnector) {
 	defer a.mu.Unlock()
 	a.connectors[connector.Slug()] = connector
 	a.logger.Info().Str("source", connector.Slug()).Msg("registered source connector")
+}
+
+// SetEventPublisher sets the event publisher for real-time updates
+func (a *Aggregator) SetEventPublisher(publisher EventPublisher) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.publisher = publisher
+	a.logger.Info().Msg("event publisher configured")
 }
 
 // GetConnector returns a connector by slug
@@ -396,6 +414,14 @@ func (a *Aggregator) fetchFromSourceWithDB(ctx context.Context, conn SourceConne
 			_, err := a.repository.UpsertIndicator(ctx, indicator)
 			if err != nil {
 				log.Warn().Err(err).Str("value", indicator.Value).Msg("failed to store indicator")
+				continue
+			}
+		}
+
+		// Publish real-time event for new threat
+		if a.publisher != nil {
+			if err := a.publisher.PublishNewThreat(ctx, indicator, source.Slug, source.Name); err != nil {
+				log.Debug().Err(err).Str("value", indicator.Value).Msg("failed to publish threat event")
 			}
 		}
 	}
@@ -419,9 +445,16 @@ func (a *Aggregator) fetchFromSourceWithDB(ctx context.Context, conn SourceConne
 	// Increment sync version for mobile apps
 	_, _ = a.cache.IncrementSyncVersion(ctx)
 
+	duration := time.Since(start)
+
+	// Publish source update event
+	if a.publisher != nil {
+		_ = a.publisher.PublishSourceUpdate(ctx, source.Slug, source.Name, true, len(dedupResult.NewIndicators), len(dedupResult.ExistingIndicators), duration, nil)
+	}
+
 	log.Info().
 		Int("new_indicators", len(dedupResult.NewIndicators)).
-		Dur("total_duration", time.Since(start)).
+		Dur("total_duration", duration).
 		Msg("source processing completed")
 
 	return nil
@@ -481,6 +514,14 @@ func (a *Aggregator) fetchFromSource(ctx context.Context, conn SourceConnector) 
 			_, err := a.repository.UpsertIndicator(ctx, indicator)
 			if err != nil {
 				log.Warn().Err(err).Str("value", indicator.Value).Msg("failed to store indicator")
+				continue
+			}
+		}
+
+		// Publish real-time event for new threat
+		if a.publisher != nil {
+			if err := a.publisher.PublishNewThreat(ctx, indicator, conn.Slug(), conn.Slug()); err != nil {
+				log.Debug().Err(err).Str("value", indicator.Value).Msg("failed to publish threat event")
 			}
 		}
 	}
@@ -501,8 +542,15 @@ func (a *Aggregator) fetchFromSource(ctx context.Context, conn SourceConnector) 
 	// Increment sync version for mobile apps
 	_, _ = a.cache.IncrementSyncVersion(ctx)
 
+	duration := time.Since(start)
+
+	// Publish source update event
+	if a.publisher != nil {
+		_ = a.publisher.PublishSourceUpdate(ctx, conn.Slug(), conn.Slug(), true, len(dedupResult.NewIndicators), len(dedupResult.ExistingIndicators), duration, nil)
+	}
+
 	log.Info().
-		Dur("total_duration", time.Since(start)).
+		Dur("total_duration", duration).
 		Msg("source processing completed")
 
 	return nil

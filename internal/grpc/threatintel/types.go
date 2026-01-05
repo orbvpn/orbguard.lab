@@ -7,8 +7,11 @@ package threatintel
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"orbguard-lab/internal/domain/models"
 )
 
 // ThreatIntelligenceServiceServer is the server API for ThreatIntelligenceService service.
@@ -137,15 +140,29 @@ type ThreatStatsResponse struct {
 type StreamThreatsRequest struct {
 	Types       []IndicatorType
 	MinSeverity Severity
-	Platforms   []Platform
+	Platforms   []string
 	CampaignId  string
+	Tags        []string
 	PegasusOnly bool
 }
 
 type ThreatUpdate struct {
-	UpdateType int32
-	Indicator  *Indicator
-	Timestamp  *timestamppb.Timestamp
+	Id             string
+	Type           string
+	Timestamp      *timestamppb.Timestamp
+	IndicatorId    string
+	IndicatorValue string
+	IndicatorType  IndicatorType
+	Severity       Severity
+	Confidence     float64
+	Description    string
+	Tags           []string
+	Platforms      []string
+	CampaignId     string
+	CampaignName   string
+	ThreatActorId  string
+	SourceSlug     string
+	SourceName     string
 }
 
 type Indicator struct {
@@ -266,4 +283,180 @@ type ListCampaignsRequest struct {
 type ListCampaignsResponse struct {
 	Campaigns []*Campaign
 	Total     int64
+}
+
+// Helper functions for converting between models and proto types
+
+// modelSeverityToProto converts models.Severity to proto Severity
+func modelSeverityToProto(s models.Severity) Severity {
+	switch s {
+	case models.SeverityInfo:
+		return Severity_SEVERITY_INFO
+	case models.SeverityLow:
+		return Severity_SEVERITY_LOW
+	case models.SeverityMedium:
+		return Severity_SEVERITY_MEDIUM
+	case models.SeverityHigh:
+		return Severity_SEVERITY_HIGH
+	case models.SeverityCritical:
+		return Severity_SEVERITY_CRITICAL
+	default:
+		return Severity_SEVERITY_UNSPECIFIED
+	}
+}
+
+// modelTypeToProto converts models.IndicatorType to proto IndicatorType
+func modelTypeToProto(t models.IndicatorType) IndicatorType {
+	switch t {
+	case models.IndicatorTypeDomain:
+		return IndicatorType_INDICATOR_TYPE_DOMAIN
+	case models.IndicatorTypeIP:
+		return IndicatorType_INDICATOR_TYPE_IP
+	case models.IndicatorTypeIPv6:
+		return IndicatorType_INDICATOR_TYPE_IPV6
+	case models.IndicatorTypeHash:
+		return IndicatorType_INDICATOR_TYPE_HASH
+	case models.IndicatorTypeURL:
+		return IndicatorType_INDICATOR_TYPE_URL
+	case models.IndicatorTypeProcess:
+		return IndicatorType_INDICATOR_TYPE_PROCESS
+	case models.IndicatorTypeCertificate:
+		return IndicatorType_INDICATOR_TYPE_CERTIFICATE
+	case models.IndicatorTypePackage:
+		return IndicatorType_INDICATOR_TYPE_PACKAGE
+	case models.IndicatorTypeEmail:
+		return IndicatorType_INDICATOR_TYPE_EMAIL
+	case models.IndicatorTypeFilePath:
+		return IndicatorType_INDICATOR_TYPE_FILEPATH
+	default:
+		return IndicatorType_INDICATOR_TYPE_UNSPECIFIED
+	}
+}
+
+// protoTypeToModel converts proto IndicatorType to models.IndicatorType
+func protoTypeToModel(t IndicatorType) models.IndicatorType {
+	switch t {
+	case IndicatorType_INDICATOR_TYPE_DOMAIN:
+		return models.IndicatorTypeDomain
+	case IndicatorType_INDICATOR_TYPE_IP:
+		return models.IndicatorTypeIP
+	case IndicatorType_INDICATOR_TYPE_IPV6:
+		return models.IndicatorTypeIPv6
+	case IndicatorType_INDICATOR_TYPE_HASH:
+		return models.IndicatorTypeHash
+	case IndicatorType_INDICATOR_TYPE_URL:
+		return models.IndicatorTypeURL
+	case IndicatorType_INDICATOR_TYPE_PROCESS:
+		return models.IndicatorTypeProcess
+	case IndicatorType_INDICATOR_TYPE_CERTIFICATE:
+		return models.IndicatorTypeCertificate
+	case IndicatorType_INDICATOR_TYPE_PACKAGE:
+		return models.IndicatorTypePackage
+	case IndicatorType_INDICATOR_TYPE_EMAIL:
+		return models.IndicatorTypeEmail
+	case IndicatorType_INDICATOR_TYPE_FILEPATH:
+		return models.IndicatorTypeFilePath
+	default:
+		return ""
+	}
+}
+
+// protoSeverityToModel converts a single proto Severity to models.Severity
+func protoSeverityToModel(s Severity) models.Severity {
+	switch s {
+	case Severity_SEVERITY_INFO:
+		return models.SeverityInfo
+	case Severity_SEVERITY_LOW:
+		return models.SeverityLow
+	case Severity_SEVERITY_MEDIUM:
+		return models.SeverityMedium
+	case Severity_SEVERITY_HIGH:
+		return models.SeverityHigh
+	case Severity_SEVERITY_CRITICAL:
+		return models.SeverityCritical
+	default:
+		return ""
+	}
+}
+
+// protoSeveritiesToModel converts proto Severity slice to models.Severity slice
+func protoSeveritiesToModel(severities []Severity) []models.Severity {
+	result := make([]models.Severity, 0, len(severities))
+	for _, s := range severities {
+		switch s {
+		case Severity_SEVERITY_INFO:
+			result = append(result, models.SeverityInfo)
+		case Severity_SEVERITY_LOW:
+			result = append(result, models.SeverityLow)
+		case Severity_SEVERITY_MEDIUM:
+			result = append(result, models.SeverityMedium)
+		case Severity_SEVERITY_HIGH:
+			result = append(result, models.SeverityHigh)
+		case Severity_SEVERITY_CRITICAL:
+			result = append(result, models.SeverityCritical)
+		}
+	}
+	return result
+}
+
+// protoTypesToModel converts proto IndicatorType slice to models.IndicatorType slice
+func protoTypesToModel(types []IndicatorType) []models.IndicatorType {
+	result := make([]models.IndicatorType, 0, len(types))
+	for _, t := range types {
+		if mt := protoTypeToModel(t); mt != "" {
+			result = append(result, mt)
+		}
+	}
+	return result
+}
+
+// uuidToString converts a uuid.UUID to string, handling nil
+func uuidToString(id *uuid.UUID) string {
+	if id == nil || *id == uuid.Nil {
+		return ""
+	}
+	return id.String()
+}
+
+// modelIndicatorToProto converts a models.Indicator to proto Indicator
+func modelIndicatorToProto(i *models.Indicator) *Indicator {
+	if i == nil {
+		return nil
+	}
+
+	platforms := make([]Platform, 0)
+	for _, p := range i.Platforms {
+		switch p {
+		case "android":
+			platforms = append(platforms, Platform_PLATFORM_ANDROID)
+		case "ios":
+			platforms = append(platforms, Platform_PLATFORM_IOS)
+		case "windows":
+			platforms = append(platforms, Platform_PLATFORM_WINDOWS)
+		case "macos":
+			platforms = append(platforms, Platform_PLATFORM_MACOS)
+		case "linux":
+			platforms = append(platforms, Platform_PLATFORM_LINUX)
+		case "all":
+			platforms = append(platforms, Platform_PLATFORM_ALL)
+		}
+	}
+
+	return &Indicator{
+		Id:              i.ID.String(),
+		Value:           i.Value,
+		Type:            modelTypeToProto(i.Type),
+		Severity:        modelSeverityToProto(i.Severity),
+		Confidence:      i.Confidence,
+		Description:     i.Description,
+		Tags:            i.Tags,
+		Platforms:       platforms,
+		FirstSeen:       timestamppb.New(i.FirstSeen),
+		LastSeen:        timestamppb.New(i.LastSeen),
+		CampaignId:      uuidToString(i.CampaignID),
+		ThreatActorId:   uuidToString(i.ThreatActorID),
+		MitreTechniques: i.MitreTechniques,
+		ReportCount:     int32(i.ReportCount),
+		SourceCount:     int32(i.SourceCount),
+	}
 }
