@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
@@ -32,7 +33,9 @@ func (h *AdminHandler) TriggerUpdate(w http.ResponseWriter, r *http.Request) {
 
 	if h.aggregator != nil {
 		go func() {
-			if err := h.aggregator.RunOnce(r.Context()); err != nil {
+			// Use background context since HTTP request context will be cancelled
+			ctx := context.Background()
+			if err := h.aggregator.RunOnce(ctx); err != nil {
 				h.logger.Error().Err(err).Msg("update failed")
 			}
 		}()
@@ -52,7 +55,9 @@ func (h *AdminHandler) TriggerSourceUpdate(w http.ResponseWriter, r *http.Reques
 
 	if h.aggregator != nil {
 		go func() {
-			if err := h.aggregator.RunSource(r.Context(), source); err != nil {
+			// Use background context since HTTP request context will be cancelled
+			ctx := context.Background()
+			if err := h.aggregator.RunSource(ctx, source); err != nil {
 				h.logger.Error().Err(err).Str("source", source).Msg("source update failed")
 			}
 		}()

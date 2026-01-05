@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"orbguard-lab/internal/domain/models"
@@ -16,6 +17,7 @@ type Deduplicator struct {
 
 	// In-memory bloom filter for fast preliminary checks
 	seenHashes map[string]bool
+	mu         sync.RWMutex // Protects seenHashes
 
 	// Cache TTL for deduplication records
 	cacheTTL time.Duration
@@ -70,7 +72,10 @@ func (d *Deduplicator) Deduplicate(ctx context.Context, indicators []*models.Ind
 // CheckExists checks if an indicator hash already exists
 func (d *Deduplicator) CheckExists(ctx context.Context, hash string) (bool, error) {
 	// Quick check in memory
-	if d.seenHashes[hash] {
+	d.mu.RLock()
+	exists := d.seenHashes[hash]
+	d.mu.RUnlock()
+	if exists {
 		return true, nil
 	}
 
@@ -87,7 +92,9 @@ func (d *Deduplicator) CheckExists(ctx context.Context, hash string) (bool, erro
 // MarkSeen marks an indicator hash as seen
 func (d *Deduplicator) MarkSeen(ctx context.Context, hash string) {
 	// Mark in memory
+	d.mu.Lock()
 	d.seenHashes[hash] = true
+	d.mu.Unlock()
 
 	// Mark in Redis
 	key := "dedup:" + hash
@@ -100,12 +107,14 @@ func (d *Deduplicator) MarkSeen(ctx context.Context, hash string) {
 func (d *Deduplicator) MarkSeenBatch(ctx context.Context, hashes []string) error {
 	pipe := d.cache.Pipeline()
 
+	d.mu.Lock()
 	for _, hash := range hashes {
 		d.seenHashes[hash] = true
 		key := "dedup:" + hash
 		pipe.Set(ctx, d.cache.Client().Options().Addr, "1", d.cacheTTL)
 		_ = key // Used in actual pipeline
 	}
+	d.mu.Unlock()
 
 	// Note: This is a simplified version. In production, you'd use the pipeline properly
 	for _, hash := range hashes {
@@ -117,21 +126,28 @@ func (d *Deduplicator) MarkSeenBatch(ctx context.Context, hashes []string) error
 
 // LoadExistingHashes loads existing hashes from database into memory
 func (d *Deduplicator) LoadExistingHashes(hashes []string) {
+	d.mu.Lock()
 	for _, hash := range hashes {
 		d.seenHashes[hash] = true
 	}
+	d.mu.Unlock()
 	d.logger.Info().Int("count", len(hashes)).Msg("loaded existing hashes into memory")
 }
 
 // Clear clears the in-memory cache (for testing or memory management)
 func (d *Deduplicator) Clear() {
+	d.mu.Lock()
 	d.seenHashes = make(map[string]bool)
+	d.mu.Unlock()
 }
 
 // Stats returns deduplication statistics
 func (d *Deduplicator) Stats() map[string]int {
+	d.mu.RLock()
+	size := len(d.seenHashes)
+	d.mu.RUnlock()
 	return map[string]int{
-		"memory_cache_size": len(d.seenHashes),
+		"memory_cache_size": size,
 	}
 }
 

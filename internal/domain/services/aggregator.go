@@ -45,6 +45,18 @@ type IndicatorRepository interface {
 
 	// RecordFetchHistory records the result of a fetch operation
 	RecordFetchHistory(ctx context.Context, result *models.SourceFetchResult) error
+
+	// GetDueSources returns sources that are due for fetching (incremental updates)
+	GetDueSources(ctx context.Context) ([]*models.Source, error)
+
+	// GetSourceBySlug returns a source by its slug
+	GetSourceBySlug(ctx context.Context, slug string) (*models.Source, error)
+
+	// UpdateSourceAfterSuccess updates source after successful fetch
+	UpdateSourceAfterSuccess(ctx context.Context, sourceID uuid.UUID) error
+
+	// UpdateSourceAfterError updates source after failed fetch
+	UpdateSourceAfterError(ctx context.Context, sourceID uuid.UUID, errMsg string) error
 }
 
 // Aggregator orchestrates fetching from all sources
@@ -236,11 +248,34 @@ func (a *Aggregator) runAllSources(ctx context.Context) error {
 
 // runDueSources runs aggregation only for sources that are due for update
 func (a *Aggregator) runDueSources(ctx context.Context) error {
+	// If we have a repository, use database-backed scheduling
+	if a.repository != nil {
+		dueSources, err := a.repository.GetDueSources(ctx)
+		if err != nil {
+			a.logger.Warn().Err(err).Msg("failed to get due sources from database, falling back to all sources")
+		} else if len(dueSources) > 0 {
+			a.logger.Info().Int("due_sources", len(dueSources)).Msg("processing due sources from database")
+
+			for _, source := range dueSources {
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				default:
+					conn, ok := a.GetConnector(source.Slug)
+					if ok && conn.IsEnabled() {
+						_ = a.fetchFromSourceWithDB(ctx, conn, source)
+					}
+				}
+			}
+			return nil
+		}
+	}
+
+	// Fallback: run all enabled connectors
 	a.mu.RLock()
 	var dueSources []SourceConnector
 	for _, conn := range a.connectors {
 		if conn.IsEnabled() {
-			// In a full implementation, check the database for next_fetch time
 			dueSources = append(dueSources, conn)
 		}
 	}
@@ -281,6 +316,115 @@ func (a *Aggregator) processSource(ctx context.Context, conn SourceConnector) *A
 	}
 
 	return result
+}
+
+// fetchFromSourceWithDB fetches indicators with database tracking for incremental updates
+func (a *Aggregator) fetchFromSourceWithDB(ctx context.Context, conn SourceConnector, source *models.Source) error {
+	start := time.Now()
+	log := a.logger.WithSourceID(conn.Slug())
+
+	log.Info().
+		Str("source_id", source.ID.String()).
+		Msg("fetching from source (incremental)")
+
+	// Fetch raw indicators
+	fetchResult, err := conn.Fetch(ctx)
+	if err != nil {
+		log.Error().Err(err).Msg("fetch failed")
+
+		// Update source with error
+		if a.repository != nil {
+			_ = a.repository.UpdateSourceAfterError(ctx, source.ID, err.Error())
+		}
+
+		// Record failed fetch in history
+		if a.repository != nil && fetchResult != nil {
+			fetchResult.SourceID = source.ID
+			fetchResult.Success = false
+			fetchResult.Error = err
+			fetchResult.Duration = time.Since(start)
+			_ = a.repository.RecordFetchHistory(ctx, fetchResult)
+		}
+
+		return err
+	}
+
+	// Set source ID for tracking
+	fetchResult.SourceID = source.ID
+
+	log.Info().
+		Int("raw_count", len(fetchResult.RawIndicators)).
+		Dur("fetch_duration", time.Since(start)).
+		Msg("fetch completed")
+
+	if len(fetchResult.RawIndicators) == 0 {
+		// Update source after successful empty fetch
+		if a.repository != nil {
+			_ = a.repository.UpdateSourceAfterSuccess(ctx, source.ID)
+			fetchResult.Success = true
+			fetchResult.Duration = time.Since(start)
+			_ = a.repository.RecordFetchHistory(ctx, fetchResult)
+		}
+		return nil
+	}
+
+	// Normalize indicators
+	normalized, normErrors := a.normalizer.NormalizeBatch(fetchResult.RawIndicators)
+	if len(normErrors) > 0 {
+		log.Warn().Int("errors", len(normErrors)).Msg("normalization errors")
+	}
+
+	log.Info().Int("normalized_count", len(normalized)).Msg("normalization completed")
+
+	// Deduplicate
+	dedupResult, err := a.deduplicator.Deduplicate(ctx, normalized)
+	if err != nil {
+		log.Error().Err(err).Msg("deduplication failed")
+		return err
+	}
+
+	log.Info().
+		Int("new", len(dedupResult.NewIndicators)).
+		Int("existing", len(dedupResult.ExistingIndicators)).
+		Int("duplicates", dedupResult.DuplicateCount).
+		Msg("deduplication completed")
+
+	// Score and store new indicators
+	for _, indicator := range dedupResult.NewIndicators {
+		indicator.Confidence = a.scorer.ScoreIndicator(indicator, nil)
+		if a.repository != nil {
+			_, err := a.repository.UpsertIndicator(ctx, indicator)
+			if err != nil {
+				log.Warn().Err(err).Str("value", indicator.Value).Msg("failed to store indicator")
+			}
+		}
+	}
+
+	// Update source after successful fetch
+	if a.repository != nil {
+		_ = a.repository.UpdateSourceAfterSuccess(ctx, source.ID)
+	}
+
+	// Record successful fetch in history
+	fetchResult.Success = true
+	fetchResult.NewIndicators = len(dedupResult.NewIndicators)
+	fetchResult.UpdatedIndicators = len(dedupResult.ExistingIndicators)
+	fetchResult.SkippedIndicators = dedupResult.DuplicateCount
+	fetchResult.Duration = time.Since(start)
+
+	if a.repository != nil {
+		_ = a.repository.RecordFetchHistory(ctx, fetchResult)
+	}
+
+	// Increment sync version for mobile apps
+	_, _ = a.cache.IncrementSyncVersion(ctx)
+
+	log.Info().
+		Int("new_indicators", len(dedupResult.NewIndicators)).
+		Dur("total_duration", time.Since(start)).
+		Msg("source processing completed")
+
+	return nil
 }
 
 // fetchFromSource fetches and processes indicators from a single source

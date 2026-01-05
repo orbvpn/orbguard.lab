@@ -1,10 +1,10 @@
 package abusech
 
 import (
+	"bufio"
 	"context"
-	"encoding/json"
+	"encoding/csv"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -33,55 +33,33 @@ func NewURLhausConnector(log *logger.Logger) *URLhausConnector {
 			models.SourceTypeAPI,
 		),
 		client: &http.Client{
-			Timeout: 30 * time.Second,
+			Timeout: 60 * time.Second,
 		},
 		logger: log.WithComponent("urlhaus"),
 	}
 }
 
-// URLhausResponse represents the API response
-type URLhausResponse struct {
-	QueryStatus string           `json:"query_status"`
-	URLs        []URLhausURL     `json:"urls"`
-}
-
-// URLhausURL represents a single URL entry
-type URLhausURL struct {
-	ID           string   `json:"id"`
-	URL          string   `json:"url"`
-	URLStatus    string   `json:"url_status"`
-	DateAdded    string   `json:"dateadded"`
-	Threat       string   `json:"threat"`
-	Tags         []string `json:"tags"`
-	URLhausLink  string   `json:"urlhaus_link"`
-	Reporter     string   `json:"reporter"`
-	LastOnline   string   `json:"last_online"`
-}
-
-// Fetch retrieves URLs from URLhaus
+// Fetch retrieves URLs from URLhaus CSV feed (public, no auth required)
 func (c *URLhausConnector) Fetch(ctx context.Context) (*models.SourceFetchResult, error) {
-	cfg := c.Config()
 	start := time.Now()
 
 	result := &models.SourceFetchResult{
-		SourceID:     uuid.Nil, // Will be set by caller
-		SourceSlug:   c.Slug(),
-		FetchedAt:    start,
+		SourceID:      uuid.Nil, // Will be set by caller
+		SourceSlug:    c.Slug(),
+		FetchedAt:     start,
 		RawIndicators: make([]models.RawIndicator, 0),
 	}
 
-	// Fetch recent URLs
-	apiURL := cfg.APIURL
-	if apiURL == "" {
-		apiURL = "https://urlhaus-api.abuse.ch/v1"
-	}
+	// Use public CSV feed (no auth required)
+	csvURL := "https://urlhaus.abuse.ch/downloads/csv_recent/"
 
-	req, err := http.NewRequestWithContext(ctx, "POST", apiURL+"/urls/recent/", strings.NewReader(""))
+	req, err := http.NewRequestWithContext(ctx, "GET", csvURL, nil)
 	if err != nil {
 		result.Error = err
 		return result, err
 	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	c.logger.Info().Str("url", csvURL).Msg("fetching URLhaus CSV feed")
 
 	resp, err := c.client.Do(req)
 	if err != nil {
@@ -96,29 +74,53 @@ func (c *URLhausConnector) Fetch(ctx context.Context) (*models.SourceFetchResult
 		return result, err
 	}
 
-	body, err := io.ReadAll(resp.Body)
+	// Parse CSV (skip comment lines starting with #)
+	scanner := bufio.NewScanner(resp.Body)
+	var csvLines []string
+	for scanner.Scan() {
+		line := scanner.Text()
+		if !strings.HasPrefix(line, "#") && len(line) > 0 {
+			csvLines = append(csvLines, line)
+		}
+	}
+
+	if len(csvLines) == 0 {
+		c.logger.Warn().Msg("no data in URLhaus feed")
+		result.Success = true
+		result.Duration = time.Since(start)
+		return result, nil
+	}
+
+	// Parse CSV data
+	// Format: id,dateadded,url,url_status,last_online,threat,tags,urlhaus_link,reporter
+	reader := csv.NewReader(strings.NewReader(strings.Join(csvLines, "\n")))
+	records, err := reader.ReadAll()
 	if err != nil {
 		result.Error = err
 		return result, err
 	}
 
-	var urlhausResp URLhausResponse
-	if err := json.Unmarshal(body, &urlhausResp); err != nil {
-		result.Error = err
-		return result, err
-	}
+	c.logger.Info().Int("records", len(records)).Msg("parsing URLhaus CSV")
 
-	if urlhausResp.QueryStatus != "ok" {
-		err = fmt.Errorf("API error: %s", urlhausResp.QueryStatus)
-		result.Error = err
-		return result, err
-	}
+	for _, record := range records {
+		if len(record) < 9 {
+			continue
+		}
 
-	// Convert to raw indicators
-	for _, u := range urlhausResp.URLs {
+		// Parse fields
+		// id, dateadded, url, url_status, last_online, threat, tags, urlhaus_link, reporter
+		urlID := record[0]
+		dateAdded := record[1]
+		urlValue := record[2]
+		urlStatus := record[3]
+		threat := record[5]
+		tagsStr := record[6]
+		urlhausLink := record[7]
+		reporter := record[8]
+
 		// Determine severity based on threat type
 		severity := models.SeverityMedium
-		switch strings.ToLower(u.Threat) {
+		switch strings.ToLower(threat) {
 		case "malware_download":
 			severity = models.SeverityHigh
 		case "phishing":
@@ -127,38 +129,61 @@ func (c *URLhausConnector) Fetch(ctx context.Context) (*models.SourceFetchResult
 
 		// Parse date
 		var firstSeen *time.Time
-		if t, err := time.Parse("2006-01-02 15:04:05", u.DateAdded); err == nil {
+		if t, err := time.Parse("2006-01-02 15:04:05", dateAdded); err == nil {
 			firstSeen = &t
 		}
 
+		// Parse tags
+		tags := []string{"urlhaus", threat}
+		if tagsStr != "" {
+			for _, tag := range strings.Split(tagsStr, ",") {
+				tags = append(tags, strings.TrimSpace(tag))
+			}
+		}
+
 		// Add URL indicator
-		tags := append(u.Tags, "urlhaus", u.Threat)
+		urlConfidence := 0.85
 		result.RawIndicators = append(result.RawIndicators, models.RawIndicator{
-			Value:       u.URL,
+			Value:       urlValue,
 			Type:        models.IndicatorTypeURL,
 			Severity:    severity,
-			Description: fmt.Sprintf("URLhaus: %s - %s", u.Threat, u.Reporter),
+			Confidence:  &urlConfidence,
+			Description: fmt.Sprintf("URLhaus: %s - %s", threat, urlStatus),
 			Tags:        tags,
 			FirstSeen:   firstSeen,
 			RawData: map[string]any{
-				"urlhaus_id":   u.ID,
-				"url_status":   u.URLStatus,
-				"reporter":     u.Reporter,
-				"urlhaus_link": u.URLhausLink,
+				"urlhaus_id":   urlID,
+				"url_status":   urlStatus,
+				"reporter":     reporter,
+				"urlhaus_link": urlhausLink,
 			},
 		})
 
-		// Extract domain from URL for additional indicator
-		domain := extractDomain(u.URL)
-		if domain != "" && !isIPAddress(domain) {
-			result.RawIndicators = append(result.RawIndicators, models.RawIndicator{
-				Value:       domain,
-				Type:        models.IndicatorTypeDomain,
-				Severity:    severity,
-				Description: fmt.Sprintf("Domain from URLhaus: %s", u.Threat),
-				Tags:        append(tags, "extracted"),
-				FirstSeen:   firstSeen,
-			})
+		// Extract domain/IP from URL for additional indicator
+		host := extractDomain(urlValue)
+		if host != "" {
+			extractedConfidence := 0.80
+			if isIPAddress(host) {
+				result.RawIndicators = append(result.RawIndicators, models.RawIndicator{
+					Value:       host,
+					Type:        models.IndicatorTypeIP,
+					Severity:    severity,
+					Confidence:  &extractedConfidence,
+					Description: fmt.Sprintf("IP from URLhaus: %s", threat),
+					Tags:        append(tags, "extracted"),
+					FirstSeen:   firstSeen,
+				})
+			} else {
+				result.RawIndicators = append(result.RawIndicators, models.RawIndicator{
+					Value:       host,
+					Type:        models.IndicatorTypeDomain,
+					Severity:    severity,
+					Confidence:  &extractedConfidence,
+					Description: fmt.Sprintf("Domain from URLhaus: %s", threat),
+					Tags:        append(tags, "extracted"),
+					FirstSeen:   firstSeen,
+				})
+			}
 		}
 	}
 
@@ -167,7 +192,7 @@ func (c *URLhausConnector) Fetch(ctx context.Context) (*models.SourceFetchResult
 	result.Duration = time.Since(start)
 
 	c.logger.Info().
-		Int("urls", len(urlhausResp.URLs)).
+		Int("records", len(records)).
 		Int("indicators", len(result.RawIndicators)).
 		Dur("duration", result.Duration).
 		Msg("fetch completed")
@@ -175,7 +200,7 @@ func (c *URLhausConnector) Fetch(ctx context.Context) (*models.SourceFetchResult
 	return result, nil
 }
 
-// extractDomain extracts the domain from a URL
+// extractDomain extracts the domain/IP from a URL
 func extractDomain(rawURL string) string {
 	// Remove protocol
 	url := rawURL

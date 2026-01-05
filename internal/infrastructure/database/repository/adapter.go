@@ -73,6 +73,26 @@ func (a *AggregatorRepositoryAdapter) RecordFetchHistory(ctx context.Context, re
 	return err
 }
 
+// GetDueSources returns sources that are due for fetching
+func (a *AggregatorRepositoryAdapter) GetDueSources(ctx context.Context) ([]*models.Source, error) {
+	return a.sources.ListDue(ctx)
+}
+
+// GetSourceBySlug returns a source by its slug
+func (a *AggregatorRepositoryAdapter) GetSourceBySlug(ctx context.Context, slug string) (*models.Source, error) {
+	return a.sources.GetBySlug(ctx, slug)
+}
+
+// UpdateSourceAfterSuccess updates source after successful fetch
+func (a *AggregatorRepositoryAdapter) UpdateSourceAfterSuccess(ctx context.Context, sourceID uuid.UUID) error {
+	return a.sources.UpdateAfterFetch(ctx, sourceID, 0) // indicatorCount will be updated separately
+}
+
+// UpdateSourceAfterError updates source after failed fetch
+func (a *AggregatorRepositoryAdapter) UpdateSourceAfterError(ctx context.Context, sourceID uuid.UUID, errMsg string) error {
+	return a.sources.UpdateAfterError(ctx, sourceID, errMsg)
+}
+
 // UpdateHistoryRepository handles update history operations
 type UpdateHistoryRepository struct {
 	pool    *pgxpool.Pool
