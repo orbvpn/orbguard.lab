@@ -1,0 +1,294 @@
+syntax = "proto3";
+
+package threatintel.v1;
+
+option go_package = "orbguard-lab/proto/threatintel/v1;threatintelv1";
+
+import "google/protobuf/timestamp.proto";
+
+// ThreatIntelligenceService provides threat intelligence operations
+service ThreatIntelligenceService {
+  // CheckIndicators checks if indicators are malicious (used by OrbNet for DNS filtering)
+  rpc CheckIndicators(CheckIndicatorsRequest) returns (CheckIndicatorsResponse);
+
+  // GetThreatStats returns aggregated threat statistics
+  rpc GetThreatStats(GetThreatStatsRequest) returns (ThreatStatsResponse);
+
+  // StreamNewThreats streams new threats in real-time (for OrbMesh DNS filtering)
+  rpc StreamNewThreats(StreamThreatsRequest) returns (stream ThreatUpdate);
+
+  // ShouldBlockDomain checks if a domain should be blocked by VPN servers
+  rpc ShouldBlockDomain(BlockCheckRequest) returns (BlockCheckResponse);
+
+  // ReportNetworkThreat reports a threat detected from VPN traffic analysis
+  rpc ReportNetworkThreat(NetworkThreatReport) returns (ReportResponse);
+
+  // GetIndicator retrieves a single indicator by value
+  rpc GetIndicator(GetIndicatorRequest) returns (GetIndicatorResponse);
+
+  // ListIndicators retrieves a list of indicators with filtering
+  rpc ListIndicators(ListIndicatorsRequest) returns (ListIndicatorsResponse);
+
+  // GetCampaign retrieves campaign details
+  rpc GetCampaign(GetCampaignRequest) returns (GetCampaignResponse);
+
+  // ListCampaigns retrieves all campaigns
+  rpc ListCampaigns(ListCampaignsRequest) returns (ListCampaignsResponse);
+}
+
+// Enums
+enum IndicatorType {
+  INDICATOR_TYPE_UNSPECIFIED = 0;
+  INDICATOR_TYPE_DOMAIN = 1;
+  INDICATOR_TYPE_IP = 2;
+  INDICATOR_TYPE_IPV6 = 3;
+  INDICATOR_TYPE_HASH = 4;
+  INDICATOR_TYPE_URL = 5;
+  INDICATOR_TYPE_PROCESS = 6;
+  INDICATOR_TYPE_CERTIFICATE = 7;
+  INDICATOR_TYPE_PACKAGE = 8;
+  INDICATOR_TYPE_EMAIL = 9;
+  INDICATOR_TYPE_FILEPATH = 10;
+}
+
+enum Severity {
+  SEVERITY_UNSPECIFIED = 0;
+  SEVERITY_INFO = 1;
+  SEVERITY_LOW = 2;
+  SEVERITY_MEDIUM = 3;
+  SEVERITY_HIGH = 4;
+  SEVERITY_CRITICAL = 5;
+}
+
+enum Platform {
+  PLATFORM_UNSPECIFIED = 0;
+  PLATFORM_ANDROID = 1;
+  PLATFORM_IOS = 2;
+  PLATFORM_WINDOWS = 3;
+  PLATFORM_MACOS = 4;
+  PLATFORM_LINUX = 5;
+  PLATFORM_ALL = 6;
+}
+
+// Indicator represents a single indicator of compromise
+message Indicator {
+  string id = 1;
+  string value = 2;
+  IndicatorType type = 3;
+  Severity severity = 4;
+  double confidence = 5;
+  string description = 6;
+  repeated string tags = 7;
+  repeated Platform platforms = 8;
+  google.protobuf.Timestamp first_seen = 9;
+  google.protobuf.Timestamp last_seen = 10;
+  string campaign_id = 11;
+  string threat_actor_id = 12;
+  repeated string mitre_techniques = 13;
+  int32 report_count = 14;
+  int32 source_count = 15;
+}
+
+// CheckIndicatorsRequest is the request for checking indicators
+message CheckIndicatorsRequest {
+  repeated CheckIndicator indicators = 1;
+}
+
+message CheckIndicator {
+  string value = 1;
+  IndicatorType type = 2;
+}
+
+// CheckIndicatorsResponse is the response for checking indicators
+message CheckIndicatorsResponse {
+  repeated CheckResult results = 1;
+}
+
+message CheckResult {
+  string value = 1;
+  IndicatorType type = 2;
+  bool is_malicious = 3;
+  Severity severity = 4;
+  double confidence = 5;
+  repeated string tags = 6;
+  string description = 7;
+  string campaign_id = 8;
+}
+
+// GetThreatStatsRequest is the request for threat statistics
+message GetThreatStatsRequest {
+  // Optional: filter by time range
+  google.protobuf.Timestamp from = 1;
+  google.protobuf.Timestamp to = 2;
+}
+
+// ThreatStatsResponse contains aggregated statistics
+message ThreatStatsResponse {
+  int64 total_indicators = 1;
+  map<string, int64> indicators_by_type = 2;
+  map<string, int64> indicators_by_severity = 3;
+  map<string, int64> indicators_by_platform = 4;
+  int32 total_sources = 5;
+  int32 active_sources = 6;
+  int32 total_campaigns = 7;
+  int32 active_campaigns = 8;
+  int64 pegasus_indicators = 9;
+  int64 mobile_indicators = 10;
+  int64 critical_indicators = 11;
+  google.protobuf.Timestamp last_update = 12;
+  int64 today_new_iocs = 13;
+  int64 weekly_new_iocs = 14;
+  int64 data_version = 15;
+}
+
+// StreamThreatsRequest configures the threat stream
+message StreamThreatsRequest {
+  // Filter by indicator types
+  repeated IndicatorType types = 1;
+  // Filter by minimum severity
+  Severity min_severity = 2;
+  // Filter by platforms
+  repeated Platform platforms = 3;
+  // Filter by campaign
+  string campaign_id = 4;
+  // Include only Pegasus indicators
+  bool pegasus_only = 5;
+}
+
+// ThreatUpdate represents a real-time threat update
+message ThreatUpdate {
+  enum UpdateType {
+    UPDATE_TYPE_UNSPECIFIED = 0;
+    UPDATE_TYPE_NEW = 1;
+    UPDATE_TYPE_UPDATED = 2;
+    UPDATE_TYPE_REMOVED = 3;
+  }
+
+  UpdateType update_type = 1;
+  Indicator indicator = 2;
+  google.protobuf.Timestamp timestamp = 3;
+}
+
+// BlockCheckRequest checks if a domain should be blocked
+message BlockCheckRequest {
+  string domain = 1;
+  // Optional: client IP for logging
+  string client_ip = 2;
+  // Optional: OrbMesh server ID
+  string server_id = 3;
+}
+
+// BlockCheckResponse indicates whether to block and why
+message BlockCheckResponse {
+  bool should_block = 1;
+  Severity severity = 2;
+  string reason = 3;
+  string campaign_id = 4;
+  repeated string tags = 5;
+  double confidence = 6;
+}
+
+// NetworkThreatReport reports a threat from VPN traffic
+message NetworkThreatReport {
+  string indicator_value = 1;
+  IndicatorType indicator_type = 2;
+  string description = 3;
+  // OrbMesh server that detected this
+  string server_id = 4;
+  // Connection metadata
+  string client_ip = 5;
+  string destination_ip = 6;
+  int32 destination_port = 7;
+  string protocol = 8;
+  // Additional context
+  map<string, string> metadata = 9;
+}
+
+// ReportResponse acknowledges the report
+message ReportResponse {
+  bool success = 1;
+  string message = 2;
+  string report_id = 3;
+}
+
+// GetIndicatorRequest retrieves a single indicator
+message GetIndicatorRequest {
+  string value = 1;
+  IndicatorType type = 2;
+}
+
+// GetIndicatorResponse returns the indicator
+message GetIndicatorResponse {
+  bool found = 1;
+  Indicator indicator = 2;
+}
+
+// ListIndicatorsRequest lists indicators with filtering
+message ListIndicatorsRequest {
+  // Filters
+  repeated IndicatorType types = 1;
+  repeated Severity severities = 2;
+  repeated Platform platforms = 3;
+  repeated string tags = 4;
+  string campaign_id = 5;
+  double min_confidence = 6;
+  google.protobuf.Timestamp first_seen_after = 7;
+  google.protobuf.Timestamp last_seen_after = 8;
+  bool pegasus_only = 9;
+
+  // Pagination
+  int32 limit = 10;
+  int32 offset = 11;
+  string cursor = 12;
+}
+
+// ListIndicatorsResponse returns a list of indicators
+message ListIndicatorsResponse {
+  repeated Indicator indicators = 1;
+  int64 total = 2;
+  bool has_more = 3;
+  string next_cursor = 4;
+}
+
+// Campaign represents a threat campaign
+message Campaign {
+  string id = 1;
+  string name = 2;
+  string slug = 3;
+  string description = 4;
+  string status = 5;
+  string threat_actor_id = 6;
+  string threat_actor_name = 7;
+  repeated string target_sectors = 8;
+  repeated Platform target_platforms = 9;
+  repeated string mitre_techniques = 10;
+  google.protobuf.Timestamp first_seen = 11;
+  google.protobuf.Timestamp last_seen = 12;
+  int64 indicator_count = 13;
+}
+
+// GetCampaignRequest retrieves a campaign
+message GetCampaignRequest {
+  // Either id or slug
+  string id = 1;
+  string slug = 2;
+}
+
+// GetCampaignResponse returns the campaign
+message GetCampaignResponse {
+  bool found = 1;
+  Campaign campaign = 2;
+}
+
+// ListCampaignsRequest lists campaigns
+message ListCampaignsRequest {
+  bool active_only = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+}
+
+// ListCampaignsResponse returns campaigns
+message ListCampaignsResponse {
+  repeated Campaign campaigns = 1;
+  int64 total = 2;
+}

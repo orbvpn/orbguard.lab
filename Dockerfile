@@ -1,30 +1,60 @@
 # Build stage
-FROM golang:1.21-alpine AS builder
+FROM golang:1.24-alpine AS builder
 
+# Install build dependencies
+RUN apk add --no-cache git ca-certificates tzdata
+
+# Set working directory
 WORKDIR /app
 
 # Copy go mod files
 COPY go.mod go.sum ./
+
+# Download dependencies
 RUN go mod download
 
 # Copy source code
-COPY main.go ./
+COPY . .
 
-# Build binary
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o server .
+# Build the application
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -ldflags="-w -s" \
+    -o /app/bin/api ./cmd/api
 
-# Runtime stage
-FROM alpine:latest
+# Final stage
+FROM alpine:3.19
 
-RUN apk --no-cache add ca-certificates
+# Install runtime dependencies
+RUN apk add --no-cache ca-certificates tzdata
 
-WORKDIR /root/
+# Create non-root user
+RUN adduser -D -u 1000 orbguard
+USER orbguard
+
+# Set working directory
+WORKDIR /app
 
 # Copy binary from builder
-COPY --from=builder /app/server .
+COPY --from=builder /app/bin/api /app/api
 
-# Expose port
-EXPOSE 8080
+# Copy config file
+COPY --from=builder /app/config.yaml /app/config.yaml
 
-# Run
-CMD ["./server"]
+# Copy migrations (for running migrations in container)
+COPY --from=builder /app/migrations /app/migrations
+
+# Copy rules (YARA rules)
+COPY --from=builder /app/rules /app/rules
+
+# Copy MITRE data
+COPY --from=builder /app/data /app/data
+
+# Expose ports
+EXPOSE 8090 9002
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8090/health || exit 1
+
+# Run the application
+ENTRYPOINT ["/app/api"]

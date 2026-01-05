@@ -1,0 +1,225 @@
+app:
+  name: orbguard-lab
+  environment: development
+  version: 1.0.0
+  debug: true
+
+server:
+  host: 0.0.0.0
+  http_port: 8090
+  grpc_port: 9002
+  read_timeout: 15s
+  write_timeout: 15s
+  idle_timeout: 60s
+  shutdown_timeout: 30s
+
+database:
+  host: localhost
+  port: 5432
+  user: orbguard
+  password: ""  # Set via ORBGUARD_DATABASE_PASSWORD env
+  dbname: orbguard_lab
+  sslmode: disable
+  max_open_conns: 25
+  max_idle_conns: 5
+  conn_max_lifetime: 5m
+  schema: orbguard_lab
+
+redis:
+  host: localhost
+  port: 6379
+  password: ""  # Set via ORBGUARD_REDIS_PASSWORD env
+  db: 1
+  key_prefix: "orbguard:"
+
+neo4j:
+  uri: bolt://localhost:7687
+  username: neo4j
+  password: ""  # Set via ORBGUARD_NEO4J_PASSWORD env
+  database: neo4j
+
+nats:
+  url: nats://localhost:4222
+  stream_name: ORBGUARD
+  subjects:
+    new_threat: "orbguard.threat.new"
+    updated_threat: "orbguard.threat.updated"
+    campaign_detected: "orbguard.campaign.detected"
+
+jwt:
+  secret: ""  # Set via ORBGUARD_JWT_SECRET env
+  expiration: 24h
+  issuer: orbguard-lab
+
+cors:
+  allowed_origins:
+    - http://localhost:3000
+    - http://localhost:8080
+    - https://admin.orbai.world
+    - https://api.orbai.world
+  allowed_methods:
+    - GET
+    - POST
+    - PUT
+    - PATCH
+    - DELETE
+    - OPTIONS
+  allowed_headers:
+    - Accept
+    - Authorization
+    - Content-Type
+    - X-Request-ID
+  allow_credentials: true
+  max_age: 3600
+
+ratelimit:
+  enabled: true
+  requests_per_minute: 100
+  requests_per_hour: 5000
+
+logger:
+  level: debug
+  format: console
+  time_format: "2006-01-02T15:04:05Z07:00"
+
+aggregation:
+  enabled: true
+  initial_delay: 10s
+  worker_pool_size: 5
+
+sources:
+  # Abuse.ch Suite
+  urlhaus:
+    enabled: true
+    update_interval: 15m
+    api_url: https://urlhaus-api.abuse.ch/v1
+
+  threatfox:
+    enabled: true
+    update_interval: 15m
+    api_url: https://threatfox-api.abuse.ch/api/v1
+
+  malwarebazaar:
+    enabled: true
+    update_interval: 4h
+    api_url: https://mb-api.abuse.ch/api/v1
+
+  feodotracker:
+    enabled: true
+    update_interval: 1h
+    api_url: https://feodotracker.abuse.ch/downloads
+
+  sslblacklist:
+    enabled: true
+    update_interval: 24h
+    api_url: https://sslbl.abuse.ch/blacklist
+
+  # Phishing
+  openphish:
+    enabled: true
+    update_interval: 4h
+    feed_url: https://openphish.com/feed.txt
+
+  phishtank:
+    enabled: false  # Requires API key
+    update_interval: 4h
+    api_key: ""  # Set via ORBGUARD_PHISHTANK_API_KEY
+
+  # IP Reputation
+  abuseipdb:
+    enabled: false  # Requires API key
+    update_interval: 1h
+    api_key: ""  # Set via ORBGUARD_ABUSEIPDB_API_KEY
+
+  greynoise:
+    enabled: false  # Requires API key
+    update_interval: 1h
+    api_key: ""  # Set via ORBGUARD_GREYNOISE_API_KEY
+
+  # Mobile/Spyware (HIGH PRIORITY)
+  citizenlab:
+    enabled: true
+    update_interval: 6h
+    github_urls:
+      - https://raw.githubusercontent.com/citizenlab/malware-indicators/master/
+
+  amnesty_mvt:
+    enabled: true
+    update_interval: 6h
+    github_urls:
+      - https://raw.githubusercontent.com/AmnestyTech/investigations/master/
+
+  koodous:
+    enabled: false  # Requires API key
+    update_interval: 6h
+    api_key: ""  # Set via ORBGUARD_KOODOUS_API_KEY
+
+  # General
+  alienvault_otx:
+    enabled: false  # Requires API key
+    update_interval: 4h
+    api_key: ""  # Set via ORBGUARD_OTX_API_KEY
+
+  virustotal:
+    enabled: false  # Requires API key (rate limited)
+    update_interval: 1h
+    api_key: ""  # Set via ORBGUARD_VIRUSTOTAL_API_KEY
+
+scoring:
+  weights:
+    source_reliability: 0.30
+    source_count: 0.25
+    recency: 0.20
+    report_count: 0.15
+    source_confidence: 0.10
+
+  bonuses:
+    pegasus: 1.20      # 20% boost for Pegasus indicators
+    cve_linked: 1.10   # 10% boost for CVE-linked
+    known_family: 1.15 # 15% boost for known malware family
+
+  source_reliability:
+    citizen-lab: 0.95
+    amnesty-tech: 0.95
+    virustotal: 0.90
+    threatfox: 0.85
+    malwarebazaar: 0.85
+    urlhaus: 0.80
+    abuseipdb: 0.75
+    community: 0.50
+
+detection:
+  yara:
+    enabled: true
+    rules_dir: ./rules
+
+  behavioral:
+    enabled: true
+    baseline_duration: 24h
+
+  supply_chain:
+    enabled: true
+    osv_api_url: https://api.osv.dev/v1
+
+mitre:
+  data_dir: ./data/mitre
+  mobile_attack_file: mobile-attack.json
+  enterprise_attack_file: enterprise-attack.json
+
+stix:
+  enabled: true
+  taxii_server:
+    enabled: false
+    port: 8091
+
+ml:
+  anomaly_detection:
+    enabled: true
+    num_trees: 100
+    sample_size: 256
+    threshold: 0.5
+
+  clustering:
+    enabled: true
+    min_samples: 5
+    eps: 0.5
