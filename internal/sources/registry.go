@@ -131,20 +131,21 @@ func (r *Registry) Configure(slug string, cfg ConnectorConfig) error {
 // ConfigureFromSourcesConfig applies configuration from config file
 func (r *Registry) ConfigureFromSourcesConfig(cfg config.SourcesConfig) {
 	configs := map[string]config.SourceConfig{
-		"urlhaus":       cfg.URLhaus,
-		"threatfox":     cfg.ThreatFox,
-		"malwarebazaar": cfg.MalwareBazaar,
-		"feodotracker":  cfg.FeodoTracker,
-		"sslblacklist":  cfg.SSLBlacklist,
-		"openphish":     cfg.OpenPhish,
-		"phishtank":     cfg.PhishTank,
-		"abuseipdb":     cfg.AbuseIPDB,
-		"greynoise":     cfg.GreyNoise,
-		"citizenlab":    cfg.CitizenLab,
-		"amnesty_mvt":   cfg.AmnestyMVT,
-		"koodous":       cfg.Koodous,
-		"alienvault_otx": cfg.AlienVaultOTX,
-		"virustotal":    cfg.VirusTotal,
+		"urlhaus":            cfg.URLhaus,
+		"threatfox":          cfg.ThreatFox,
+		"malwarebazaar":      cfg.MalwareBazaar,
+		"feodotracker":       cfg.FeodoTracker,
+		"sslblacklist":       cfg.SSLBlacklist,
+		"openphish":          cfg.OpenPhish,
+		"phishtank":          cfg.PhishTank,
+		"google_safebrowsing": cfg.GoogleSafeBrowsing,
+		"abuseipdb":          cfg.AbuseIPDB,
+		"greynoise":          cfg.GreyNoise,
+		"citizenlab":         cfg.CitizenLab,
+		"amnesty_mvt":        cfg.AmnestyMVT,
+		"koodous":            cfg.Koodous,
+		"alienvault_otx":     cfg.AlienVaultOTX,
+		"virustotal":         cfg.VirusTotal,
 	}
 
 	for slug, srcCfg := range configs {

@@ -207,14 +207,27 @@ func DefaultSources() []Source {
 		{
 			Name:           "PhishTank",
 			Slug:           "phishtank",
-			Description:    "PhishTank - Community Phishing Data",
+			Description:    "PhishTank - Community Phishing Data (DEPRECATED: No new registrations)",
 			Category:       SourceCategoryPhishing,
 			Type:           SourceTypeAPI,
-			Status:         SourceStatusPaused, // Requires API key
+			Status:         SourceStatusDisabled, // No longer accepts new registrations
 			RequiresAPIKey: true,
 			Reliability:    0.70,
 			Weight:         0.8,
 			UpdateInterval: 4 * time.Hour,
+		},
+		{
+			Name:           "Google Safe Browsing",
+			Slug:           "google_safebrowsing",
+			Description:    "Google Safe Browsing API v4 - Phishing, Malware, and Unwanted Software Detection",
+			Category:       SourceCategoryPhishing,
+			Type:           SourceTypeAPI,
+			Status:         SourceStatusActive,
+			APIURL:         "https://safebrowsing.googleapis.com/v4",
+			RequiresAPIKey: true,
+			Reliability:    0.90,
+			Weight:         1.2,
+			UpdateInterval: 30 * time.Minute,
 		},
 
 		// Mobile/Spyware (HIGH PRIORITY)

@@ -124,20 +124,27 @@ sources:
     feed_url: https://openphish.com/feed.txt
 
   phishtank:
-    enabled: false  # Requires API key
+    enabled: false  # DEPRECATED: PhishTank no longer accepts new registrations
     update_interval: 4h
-    api_key: ""  # Set via ORBGUARD_PHISHTANK_API_KEY
+    api_key: ""
+
+  # Google Safe Browsing - PhishTank alternative (FREE with limits)
+  google_safebrowsing:
+    enabled: true
+    update_interval: 30m
+    api_key: ""  # Set via ORBGUARD_SOURCES_GOOGLE_SAFEBROWSING_API_KEY env
+    api_url: https://safebrowsing.googleapis.com/v4
 
   # IP Reputation
   abuseipdb:
-    enabled: false  # Requires API key
+    enabled: true
     update_interval: 1h
-    api_key: ""  # Set via ORBGUARD_ABUSEIPDB_API_KEY
+    api_key: ""  # Set via ORBGUARD_SOURCES_ABUSEIPDB_API_KEY env
 
   greynoise:
-    enabled: false  # Requires API key
+    enabled: true
     update_interval: 1h
-    api_key: ""  # Set via ORBGUARD_GREYNOISE_API_KEY
+    api_key: ""  # Set via ORBGUARD_SOURCES_GREYNOISE_API_KEY env
 
   # Mobile/Spyware (HIGH PRIORITY)
   citizenlab:
@@ -153,20 +160,20 @@ sources:
       - https://raw.githubusercontent.com/AmnestyTech/investigations/master/
 
   koodous:
-    enabled: false  # Requires API key
+    enabled: true
     update_interval: 6h
-    api_key: ""  # Set via ORBGUARD_KOODOUS_API_KEY
+    api_key: ""  # Set via ORBGUARD_SOURCES_KOODOUS_API_KEY env
 
   # General
   alienvault_otx:
-    enabled: false  # Requires API key
+    enabled: true
     update_interval: 4h
-    api_key: ""  # Set via ORBGUARD_OTX_API_KEY
+    api_key: ""  # Set via ORBGUARD_SOURCES_ALIENVAULT_OTX_API_KEY env
 
   virustotal:
-    enabled: false  # Requires API key (rate limited)
+    enabled: true
     update_interval: 1h
-    api_key: ""  # Set via ORBGUARD_VIRUSTOTAL_API_KEY
+    api_key: ""  # Set via ORBGUARD_SOURCES_VIRUSTOTAL_API_KEY env
 
 scoring:
   weights:

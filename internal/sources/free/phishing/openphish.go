@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 
 	"orbguard-lab/internal/domain/models"
+	"orbguard-lab/internal/sources"
 	"orbguard-lab/pkg/logger"
 )
 
@@ -47,6 +48,16 @@ func (c *OpenPhishConnector) Slug() string {
 	return openPhishSlug
 }
 
+// Name returns the human-readable name of this source
+func (c *OpenPhishConnector) Name() string {
+	return "OpenPhish"
+}
+
+// Category returns the category of this source
+func (c *OpenPhishConnector) Category() models.SourceCategory {
+	return models.SourceCategoryPhishing
+}
+
 // IsEnabled returns whether this source is enabled
 func (c *OpenPhishConnector) IsEnabled() bool {
 	return c.enabled
@@ -65,6 +76,15 @@ func (c *OpenPhishConnector) UpdateInterval() time.Duration {
 // SetSourceID sets the database source ID
 func (c *OpenPhishConnector) SetSourceID(id uuid.UUID) {
 	c.sourceID = id
+}
+
+// Configure configures the connector with the given config
+func (c *OpenPhishConnector) Configure(cfg sources.ConnectorConfig) error {
+	c.enabled = cfg.Enabled
+	if cfg.UpdateInterval > 0 {
+		c.interval = cfg.UpdateInterval
+	}
+	return nil
 }
 
 // Fetch retrieves phishing URLs from OpenPhish

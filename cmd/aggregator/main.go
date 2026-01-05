@@ -16,6 +16,7 @@ import (
 	"orbguard-lab/internal/sources"
 	"orbguard-lab/internal/sources/free/abusech"
 	"orbguard-lab/internal/sources/free/mobile"
+	"orbguard-lab/internal/sources/free/phishing"
 	"orbguard-lab/pkg/logger"
 )
 
@@ -368,6 +369,14 @@ func registerConnectors(registry *sources.Registry, log *logger.Logger) {
 	// Abuse.ch connectors
 	if err := registry.Register(abusech.NewURLhausConnector(log)); err != nil {
 		log.Warn().Err(err).Msg("failed to register URLhaus connector")
+	}
+
+	// Phishing connectors
+	if err := registry.Register(phishing.NewOpenPhishConnector(log)); err != nil {
+		log.Warn().Err(err).Msg("failed to register OpenPhish connector")
+	}
+	if err := registry.Register(phishing.NewSafeBrowsingConnector(log)); err != nil {
+		log.Warn().Err(err).Msg("failed to register Google Safe Browsing connector")
 	}
 
 	// Mobile/Spyware connectors (HIGH PRIORITY)
