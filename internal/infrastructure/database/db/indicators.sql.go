@@ -122,7 +122,7 @@ type CreateIndicatorParams struct {
 	Confidence      pgtype.Numeric       `db:"confidence" json:"confidence"`
 	Description     pgtype.Text          `db:"description" json:"description"`
 	Tags            []string             `db:"tags" json:"tags"`
-	Platforms       []models.Platform    `db:"platforms" json:"platforms"`
+	Platforms       []string             `db:"platforms" json:"platforms"`
 	FirstSeen       pgtype.Timestamptz   `db:"first_seen" json:"first_seen"`
 	LastSeen        pgtype.Timestamptz   `db:"last_seen" json:"last_seen"`
 	ExpiresAt       pgtype.Timestamptz   `db:"expires_at" json:"expires_at"`
@@ -1461,7 +1461,7 @@ type UpsertIndicatorParams struct {
 	Confidence      pgtype.Numeric       `db:"confidence" json:"confidence"`
 	Description     pgtype.Text          `db:"description" json:"description"`
 	Tags            []string             `db:"tags" json:"tags"`
-	Platforms       []models.Platform    `db:"platforms" json:"platforms"`
+	Platforms       []string             `db:"platforms" json:"platforms"`
 	FirstSeen       pgtype.Timestamptz   `db:"first_seen" json:"first_seen"`
 	LastSeen        pgtype.Timestamptz   `db:"last_seen" json:"last_seen"`
 	CampaignID      pgtype.UUID          `db:"campaign_id" json:"campaign_id"`

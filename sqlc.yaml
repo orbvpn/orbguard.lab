@@ -39,8 +39,10 @@ sql:
               type: "Severity"
           - db_type: "platform_type"
             go_type:
-              import: "orbguard-lab/internal/domain/models"
-              type: "Platform"
+              type: "string"
+          - db_type: "platform_type[]"
+            go_type:
+              type: "[]string"
           - db_type: "source_category"
             go_type:
               import: "orbguard-lab/internal/domain/models"

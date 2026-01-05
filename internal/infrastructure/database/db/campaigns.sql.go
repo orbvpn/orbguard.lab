@@ -82,7 +82,7 @@ type CreateCampaignParams struct {
 	ThreatActorID   pgtype.UUID           `db:"threat_actor_id" json:"threat_actor_id"`
 	TargetSectors   []string              `db:"target_sectors" json:"target_sectors"`
 	TargetRegions   []string              `db:"target_regions" json:"target_regions"`
-	TargetPlatforms []models.Platform     `db:"target_platforms" json:"target_platforms"`
+	TargetPlatforms []string              `db:"target_platforms" json:"target_platforms"`
 	MitreTechniques []string              `db:"mitre_techniques" json:"mitre_techniques"`
 	MitreTactics    []string              `db:"mitre_tactics" json:"mitre_tactics"`
 	FirstSeen       pgtype.Timestamptz    `db:"first_seen" json:"first_seen"`
@@ -157,7 +157,7 @@ type CreateMalwareFamilyParams struct {
 	Aliases       []string           `db:"aliases" json:"aliases"`
 	Description   pgtype.Text        `db:"description" json:"description"`
 	Type          pgtype.Text        `db:"type" json:"type"`
-	Platforms     []models.Platform  `db:"platforms" json:"platforms"`
+	Platforms     []string           `db:"platforms" json:"platforms"`
 	ThreatActorID pgtype.UUID        `db:"threat_actor_id" json:"threat_actor_id"`
 	Techniques    []string           `db:"techniques" json:"techniques"`
 	Capabilities  []string           `db:"capabilities" json:"capabilities"`

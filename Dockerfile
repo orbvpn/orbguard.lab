@@ -29,25 +29,27 @@ RUN apk add --no-cache ca-certificates tzdata
 
 # Create non-root user
 RUN adduser -D -u 1000 orbguard
-USER orbguard
 
 # Set working directory
 WORKDIR /app
 
-# Copy binary from builder
-COPY --from=builder /app/bin/api /app/api
+# Copy binary from builder (with correct ownership)
+COPY --from=builder --chown=orbguard:orbguard /app/bin/api /app/api
 
-# Copy config file
-COPY --from=builder /app/config.yaml /app/config.yaml
+# Copy config file (with correct ownership)
+COPY --from=builder --chown=orbguard:orbguard /app/config.yaml /app/config.yaml
 
 # Copy migrations (for running migrations in container)
-COPY --from=builder /app/migrations /app/migrations
+COPY --from=builder --chown=orbguard:orbguard /app/migrations /app/migrations
 
 # Copy rules (YARA rules)
-COPY --from=builder /app/rules /app/rules
+COPY --from=builder --chown=orbguard:orbguard /app/rules /app/rules
 
 # Copy MITRE data
-COPY --from=builder /app/data /app/data
+COPY --from=builder --chown=orbguard:orbguard /app/data /app/data
+
+# Switch to non-root user
+USER orbguard
 
 # Expose ports
 EXPOSE 8090 9002

@@ -482,7 +482,7 @@ type Campaign struct {
 	ThreatActorID   pgtype.UUID           `db:"threat_actor_id" json:"threat_actor_id"`
 	TargetSectors   []string              `db:"target_sectors" json:"target_sectors"`
 	TargetRegions   []string              `db:"target_regions" json:"target_regions"`
-	TargetPlatforms []models.Platform     `db:"target_platforms" json:"target_platforms"`
+	TargetPlatforms []string              `db:"target_platforms" json:"target_platforms"`
 	MitreTechniques []string              `db:"mitre_techniques" json:"mitre_techniques"`
 	MitreTactics    []string              `db:"mitre_tactics" json:"mitre_tactics"`
 	FirstSeen       pgtype.Timestamptz    `db:"first_seen" json:"first_seen"`
@@ -531,7 +531,7 @@ type Indicator struct {
 	Confidence      pgtype.Numeric       `db:"confidence" json:"confidence"`
 	Description     pgtype.Text          `db:"description" json:"description"`
 	Tags            []string             `db:"tags" json:"tags"`
-	Platforms       []models.Platform    `db:"platforms" json:"platforms"`
+	Platforms       []string             `db:"platforms" json:"platforms"`
 	FirstSeen       pgtype.Timestamptz   `db:"first_seen" json:"first_seen"`
 	LastSeen        pgtype.Timestamptz   `db:"last_seen" json:"last_seen"`
 	ExpiresAt       pgtype.Timestamptz   `db:"expires_at" json:"expires_at"`
@@ -564,7 +564,7 @@ type MalwareFamily struct {
 	Aliases        []string           `db:"aliases" json:"aliases"`
 	Description    pgtype.Text        `db:"description" json:"description"`
 	Type           pgtype.Text        `db:"type" json:"type"`
-	Platforms      []models.Platform  `db:"platforms" json:"platforms"`
+	Platforms      []string           `db:"platforms" json:"platforms"`
 	ThreatActorID  pgtype.UUID        `db:"threat_actor_id" json:"threat_actor_id"`
 	Techniques     []string           `db:"techniques" json:"techniques"`
 	Capabilities   []string           `db:"capabilities" json:"capabilities"`
