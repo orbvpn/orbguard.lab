@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: orbguard-config
+  namespace: orbguard
+data:
+  # Application
+  ORBGUARD_APP_ENVIRONMENT: "production"
+  ORBGUARD_APP_NAME: "orbguard-lab"
+  ORBGUARD_APP_VERSION: "1.0.0"
+
+  # Database
+  ORBGUARD_DATABASE_HOST: "postgres"
+  ORBGUARD_DATABASE_PORT: "5432"
+  ORBGUARD_DATABASE_DBNAME: "orbguard_lab"
+  ORBGUARD_DATABASE_SCHEMA: "orbguard_lab"
+
+  # Cache
+  ORBGUARD_REDIS_HOST: "redis"
+  ORBGUARD_REDIS_PORT: "6379"
+
+  # Graph Database
+  ORBGUARD_NEO4J_ENABLED: "true"
+  ORBGUARD_NEO4J_URI: "bolt://neo4j:7687"
+
+  # Event Streaming
+  ORBGUARD_NATS_ENABLED: "true"
+  ORBGUARD_NATS_URL: "nats://nats:4222"
+
+  # STIX/TAXII
+  ORBGUARD_STIX_ENABLED: "true"
+  ORBGUARD_STIX_TAXII_ENABLED: "true"
+
+  # Aggregation
+  ORBGUARD_AGGREGATION_ENABLED: "true"
+  ORBGUARD_AGGREGATION_INTERVAL: "15m"

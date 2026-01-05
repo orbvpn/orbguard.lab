@@ -33,10 +33,13 @@ redis:
   key_prefix: "orbguard:"
 
 neo4j:
+  enabled: true  # Enable Neo4j graph database for threat correlation
   uri: bolt://localhost:7687
   username: neo4j
   password: ""  # Set via ORBGUARD_NEO4J_PASSWORD env
   database: neo4j
+  max_connections: 50
+  max_lifetime_minutes: 60
 
 nats:
   url: nats://localhost:4222

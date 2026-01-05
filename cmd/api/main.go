@@ -19,9 +19,11 @@ import (
 	"orbguard-lab/internal/infrastructure/cache"
 	"orbguard-lab/internal/infrastructure/database"
 	"orbguard-lab/internal/infrastructure/database/repository"
+	"orbguard-lab/internal/infrastructure/graph"
 	"orbguard-lab/internal/sources"
 	"orbguard-lab/internal/sources/free/abusech"
 	"orbguard-lab/internal/sources/free/mobile"
+	"orbguard-lab/internal/streaming"
 	"orbguard-lab/pkg/logger"
 )
 
@@ -75,6 +77,26 @@ func main() {
 		log.Warn().Msg("running without database - repositories unavailable")
 	}
 
+	// Initialize streaming infrastructure
+	var natsPublisher *streaming.NATSPublisher
+	if cfg.NATS.Enabled {
+		var err error
+		natsPublisher, err = streaming.NewNATSPublisher(ctx, cfg.NATS, log)
+		if err != nil {
+			log.Warn().Err(err).Msg("failed to connect to NATS, continuing without real-time streaming")
+		} else {
+			log.Info().Str("url", cfg.NATS.URL).Msg("connected to NATS")
+		}
+	}
+
+	// Create event bus for real-time updates
+	eventBus := streaming.NewEventBus(natsPublisher, log)
+	log.Info().Bool("nats_enabled", natsPublisher != nil).Msg("event bus initialized")
+
+	// Create WebSocket hub for mobile app real-time updates
+	wsHub := streaming.NewWebSocketHub(natsPublisher, log)
+	go wsHub.Run(ctx)
+
 	// Initialize services
 	normalizer := services.NewNormalizer(log)
 	deduplicator := services.NewDeduplicator(redisCache, log)
@@ -98,16 +120,115 @@ func main() {
 		aggregator.RegisterConnector(conn)
 	}
 
+	// Wire event publisher for real-time updates
+	eventPublisher := streaming.NewEventBusPublisher(eventBus, wsHub)
+	aggregator.SetEventPublisher(eventPublisher)
+
+	// Initialize URL reputation service (Safe Web protection)
+	urlService := services.NewURLReputationService(repos, redisCache, nil, log)
+	log.Info().Msg("URL reputation service initialized")
+
+	// Initialize dark web monitoring (HIBP integration)
+	hibpClient := services.NewHIBPClient(services.HIBPConfig{
+		APIKey: cfg.HIBP.APIKey,
+	}, log)
+	darkWebMonitor := services.NewDarkWebMonitor(hibpClient, redisCache, log)
+	log.Info().Msg("dark web monitor initialized")
+
+	// Initialize app security analyzer
+	appAnalyzer := services.NewAppAnalyzer(repos, redisCache, log)
+	log.Info().Msg("app security analyzer initialized")
+
+	// Initialize network security service
+	networkSecurity := services.NewNetworkSecurityService(repos, redisCache, log)
+	log.Info().Msg("network security service initialized")
+
+	// Initialize YARA scanning service
+	yaraService := services.NewYARAService(cfg.Detection.YARA.RulesDir, redisCache, log)
+	log.Info().Int("rules_loaded", len(yaraService.GetRules(nil))).Msg("YARA service initialized")
+
+	// Initialize correlation engine
+	correlationEngine := services.NewCorrelationEngine(repos, redisCache, log)
+	log.Info().Msg("correlation engine initialized")
+
+	// Initialize MITRE ATT&CK service
+	mitreService := services.NewMITREService(cfg.MITRE.DataDir, redisCache, log)
+	log.Info().
+		Int("tactics", mitreService.GetStats().TotalTactics).
+		Int("techniques", mitreService.GetStats().TotalTechniques).
+		Msg("MITRE ATT&CK service initialized")
+
+	// Initialize ML service
+	mlService := services.NewMLService(services.DefaultMLServiceConfig(), repos, redisCache, log)
+	log.Info().Msg("ML service initialized")
+
+	// Initialize privacy protection service
+	privacyService := services.NewPrivacyService(redisCache, log)
+	log.Info().Msg("privacy protection service initialized")
+
+	// Initialize device security service (anti-theft, SIM monitoring, OS vulnerabilities)
+	deviceSecurityService := services.NewDeviceSecurityService(redisCache, log)
+	log.Info().Msg("device security service initialized")
+
+	// Initialize QR security service (quishing protection)
+	qrSecurityService := services.NewQRSecurityService(urlService, redisCache, log)
+	log.Info().Msg("QR security service initialized")
+
+	// Initialize STIX/TAXII service (enterprise threat intel standard)
+	stixTAXIIService := services.NewSTIXTAXIIService(repos, redisCache, log)
+	log.Info().Msg("STIX/TAXII 2.1 service initialized")
+
+	// Initialize Enterprise service (MDM, Zero Trust, SIEM, Compliance)
+	enterpriseService := services.NewEnterpriseService(repos, redisCache, log)
+	enterpriseService.Start(ctx)
+	defer enterpriseService.Stop()
+	log.Info().Msg("enterprise services initialized (MDM, Zero Trust, SIEM, Compliance)")
+
+	// Initialize OrbNet VPN integration service
+	orbnetService := services.NewOrbNetService(repos, redisCache, log)
+	log.Info().Msg("OrbNet VPN integration service initialized")
+
+	// Initialize Neo4j graph database (if enabled)
+	var graphService *services.GraphService
+	if cfg.Neo4j.Enabled {
+		neo4jClient, err := graph.NewNeo4jClient(ctx, cfg.Neo4j, log)
+		if err != nil {
+			log.Warn().Err(err).Msg("failed to connect to Neo4j, graph features disabled")
+		} else {
+			defer neo4jClient.Close(ctx)
+			graphRepo := graph.NewGraphRepository(neo4jClient, log)
+			graphService = services.NewGraphService(graphRepo, repos, redisCache, log)
+			log.Info().Str("uri", cfg.Neo4j.URI).Msg("Neo4j graph database initialized")
+		}
+	}
+
 	// Initialize handlers
 	deps := handlers.Dependencies{
-		Aggregator:   aggregator,
-		Normalizer:   normalizer,
-		Deduplicator: deduplicator,
-		Scorer:       scorer,
-		Scheduler:    scheduler,
-		Cache:        redisCache,
-		Logger:       log,
-		Repos:        repos,
+		Aggregator:        aggregator,
+		Normalizer:        normalizer,
+		Deduplicator:      deduplicator,
+		Scorer:            scorer,
+		Scheduler:         scheduler,
+		Cache:             redisCache,
+		Logger:            log,
+		Repos:             repos,
+		EventBus:          eventBus,
+		WSHub:             wsHub,
+		URLService:        urlService,
+		DarkWebMonitor:    darkWebMonitor,
+		AppAnalyzer:       appAnalyzer,
+		NetworkSecurity:   networkSecurity,
+		GraphService:      graphService,
+		YARAService:       yaraService,
+		CorrelationEngine: correlationEngine,
+		MITREService:          mitreService,
+		MLService:             mlService,
+		PrivacyService:        privacyService,
+		DeviceSecurityService: deviceSecurityService,
+		QRSecurityService:     qrSecurityService,
+		STIXTAXIIService:      stixTAXIIService,
+		EnterpriseService:     enterpriseService,
+		OrbNetService:         orbnetService,
 	}
 	h := handlers.NewHandlers(deps)
 
@@ -140,8 +261,11 @@ func main() {
 	}
 
 	grpcServer := grpc.NewServer()
-	threatIntelServer := grpcserver.NewServer(aggregator, redisCache, log)
+	threatIntelServer := grpcserver.NewServer(aggregator, repos, redisCache, eventBus, log)
 	threatIntelServer.Register(grpcServer)
+
+	// Register gRPC health check service
+	grpcserver.RegisterHealthServer(grpcServer, db, redisCache)
 
 	go func() {
 		log.Info().

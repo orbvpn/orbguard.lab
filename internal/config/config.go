@@ -27,6 +27,13 @@ type Config struct {
 	MITRE       MITREConfig       `mapstructure:"mitre"`
 	STIX        STIXConfig        `mapstructure:"stix"`
 	ML          MLConfig          `mapstructure:"ml"`
+	HIBP        HIBPConfig        `mapstructure:"hibp"`
+}
+
+// HIBPConfig holds Have I Been Pwned API configuration
+type HIBPConfig struct {
+	APIKey  string `mapstructure:"api_key"`
+	Enabled bool   `mapstructure:"enabled"`
 }
 
 type AppConfig struct {
@@ -79,15 +86,19 @@ func (c RedisConfig) Addr() string {
 }
 
 type Neo4jConfig struct {
-	URI      string `mapstructure:"uri"`
-	Username string `mapstructure:"username"`
-	Password string `mapstructure:"password"`
-	Database string `mapstructure:"database"`
+	Enabled            bool   `mapstructure:"enabled"`
+	URI                string `mapstructure:"uri"`
+	Username           string `mapstructure:"username"`
+	Password           string `mapstructure:"password"`
+	Database           string `mapstructure:"database"`
+	MaxConnections     int    `mapstructure:"max_connections"`
+	MaxLifetimeMinutes int    `mapstructure:"max_lifetime_minutes"`
 }
 
 type NATSConfig struct {
-	URL        string            `mapstructure:"url"`
-	StreamName string            `mapstructure:"stream_name"`
+	Enabled    bool               `mapstructure:"enabled"`
+	URL        string             `mapstructure:"url"`
+	StreamName string             `mapstructure:"stream_name"`
 	Subjects   NATSSubjectsConfig `mapstructure:"subjects"`
 }
 

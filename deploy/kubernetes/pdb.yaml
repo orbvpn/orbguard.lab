@@ -1,0 +1,12 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: orbguard-lab
+  namespace: orbguard
+  labels:
+    app: orbguard-lab
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: orbguard-lab
