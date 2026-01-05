@@ -79,6 +79,7 @@ type RedisConfig struct {
 	Password  string `mapstructure:"password"`
 	DB        int    `mapstructure:"db"`
 	KeyPrefix string `mapstructure:"key_prefix"`
+	TLS       bool   `mapstructure:"tls"`
 }
 
 func (c RedisConfig) Addr() string {

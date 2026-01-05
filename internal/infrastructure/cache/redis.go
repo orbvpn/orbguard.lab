@@ -2,6 +2,7 @@ package cache
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -22,13 +23,22 @@ type RedisCache struct {
 // NewRedis creates a new Redis client
 func NewRedis(ctx context.Context, cfg config.RedisConfig, log *logger.Logger) (*RedisCache, error) {
 	log = log.WithComponent("redis")
-	log.Info().Str("host", cfg.Host).Int("port", cfg.Port).Msg("connecting to Redis")
+	log.Info().Str("host", cfg.Host).Int("port", cfg.Port).Bool("tls", cfg.TLS).Msg("connecting to Redis")
 
-	client := redis.NewClient(&redis.Options{
+	opts := &redis.Options{
 		Addr:     cfg.Addr(),
 		Password: cfg.Password,
 		DB:       cfg.DB,
-	})
+	}
+
+	// Enable TLS for Azure Redis Cache (port 6380)
+	if cfg.TLS {
+		opts.TLSConfig = &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		}
+	}
+
+	client := redis.NewClient(opts)
 
 	// Test connection
 	if err := client.Ping(ctx).Err(); err != nil {
