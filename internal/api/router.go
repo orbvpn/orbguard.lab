@@ -565,6 +565,85 @@ func (r *Router) Setup() http.Handler {
 			orbnet.Get("/categories", r.handlers.OrbNet.GetCategories)
 		})
 
+		// Forensic Analysis endpoints (Pegasus/Spyware detection)
+		api.Route("/forensics", func(forensics chi.Router) {
+			// iOS Forensics
+			forensics.Post("/ios/shutdown-log", r.handlers.Forensics.AnalyzeShutdownLog)
+			forensics.Post("/ios/shutdown-log/upload", r.handlers.Forensics.UploadShutdownLog)
+			forensics.Post("/ios/backup", r.handlers.Forensics.AnalyzeBackup)
+			forensics.Post("/ios/data-usage", r.handlers.Forensics.AnalyzeDataUsage)
+			forensics.Post("/ios/sysdiagnose", r.handlers.Forensics.AnalyzeSysdiagnose)
+
+			// Android Forensics
+			forensics.Post("/android/logcat", r.handlers.Forensics.AnalyzeLogcat)
+			forensics.Post("/android/logcat/upload", r.handlers.Forensics.UploadLogcat)
+
+			// Comprehensive Analysis
+			forensics.Post("/full", r.handlers.Forensics.FullAnalysis)
+			forensics.Post("/quick-check", r.handlers.Forensics.QuickCheck)
+
+			// IOC database (Citizen Lab/Amnesty MVT integration)
+			forensics.Get("/iocs/stats", r.handlers.Forensics.GetIOCStats)
+
+			// Capabilities and documentation
+			forensics.Get("/capabilities", r.handlers.Forensics.GetCapabilities)
+		})
+
+		// Digital Footprint endpoints (Data broker removal, privacy)
+		api.Route("/footprint", func(footprint chi.Router) {
+			// Scan digital footprint
+			footprint.Post("/scan", r.handlers.Footprint.Scan)
+			footprint.Post("/quick-scan", r.handlers.Footprint.QuickScan)
+
+			// Data brokers
+			footprint.Get("/brokers", r.handlers.Footprint.GetBrokers)
+			footprint.Get("/brokers/categories", r.handlers.Footprint.GetCategories)
+			footprint.Get("/brokers/{id}", r.handlers.Footprint.GetBroker)
+
+			// Data removal requests
+			footprint.Post("/removal", r.handlers.Footprint.RequestRemoval)
+			footprint.Post("/removal/batch", r.handlers.Footprint.RequestBatchRemoval)
+			footprint.Get("/removal/{id}", r.handlers.Footprint.GetRemovalStatus)
+
+			// Stats
+			footprint.Get("/stats", r.handlers.Footprint.GetStats)
+		})
+
+		// Desktop Security endpoints (KnockKnock/LuLu-style)
+		api.Route("/desktop", func(desktop chi.Router) {
+			// Persistence scanning
+			desktop.Post("/persistence/scan", r.handlers.DesktopSecurity.ScanPersistence)
+			desktop.Post("/persistence/quick-scan", r.handlers.DesktopSecurity.QuickScanPersistence)
+			desktop.Post("/persistence/scan-path", r.handlers.DesktopSecurity.ScanPath)
+
+			// Code signing verification
+			desktop.Post("/codesign/verify", r.handlers.DesktopSecurity.VerifyCodeSigning)
+			desktop.Post("/codesign/verify-batch", r.handlers.DesktopSecurity.VerifyCodeSigningBatch)
+
+			// Network monitoring (LuLu-style)
+			desktop.Get("/network/connections", r.handlers.DesktopSecurity.GetNetworkConnections)
+			desktop.Get("/network/listening", r.handlers.DesktopSecurity.GetListeningPorts)
+			desktop.Get("/network/outbound", r.handlers.DesktopSecurity.GetOutboundConnections)
+
+			// Firewall rules
+			desktop.Get("/network/rules", r.handlers.DesktopSecurity.GetFirewallRules)
+			desktop.Post("/network/rules", r.handlers.DesktopSecurity.AddFirewallRule)
+			desktop.Delete("/network/rules/{id}", r.handlers.DesktopSecurity.DeleteFirewallRule)
+			desktop.Post("/network/block-ip", r.handlers.DesktopSecurity.BlockIP)
+
+			// Browser extension scanning
+			desktop.Post("/browser/extensions/scan", r.handlers.DesktopSecurity.ScanBrowserExtensions)
+
+			// VirusTotal integration
+			desktop.Get("/virustotal/hash/{hash}", r.handlers.DesktopSecurity.LookupHash)
+			desktop.Post("/virustotal/file", r.handlers.DesktopSecurity.LookupFile)
+			desktop.Post("/virustotal/batch", r.handlers.DesktopSecurity.LookupHashBatch)
+			desktop.Get("/virustotal/ip/{ip}", r.handlers.DesktopSecurity.LookupIP)
+
+			// Full security scan
+			desktop.Post("/scan/full", r.handlers.DesktopSecurity.FullSecurityScan)
+		})
+
 		// Admin endpoints
 		api.Route("/admin", func(admin chi.Router) {
 			// Require admin auth

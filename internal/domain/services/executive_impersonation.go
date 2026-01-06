@@ -342,7 +342,7 @@ func (d *ExecutiveImpersonationDetector) AnalyzeSMSForImpersonation(result *mode
 
 		// Add to pattern matches
 		for _, indicator := range impersonation.Indicators {
-			result.PatternMatches = append(result.PatternMatches, models.PatternMatch{
+			result.PatternMatches = append(result.PatternMatches, models.SMSPatternMatch{
 				PatternName: indicator,
 				PatternType: "executive_impersonation",
 				Confidence:  impersonation.Confidence,

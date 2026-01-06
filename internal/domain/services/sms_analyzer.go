@@ -108,11 +108,11 @@ func (a *SMSAnalyzer) AnalyzeBatch(ctx context.Context, req *models.SMSBatchAnal
 }
 
 // extractURLs extracts and analyzes URLs from message body
-func (a *SMSAnalyzer) extractURLs(ctx context.Context, body string) []models.ExtractedURL {
+func (a *SMSAnalyzer) extractURLs(ctx context.Context, body string) []models.SMSExtractedURL {
 	urlPattern := regexp.MustCompile(`https?://[^\s<>"{}|\\^` + "`" + `\[\]]+|www\.[^\s<>"{}|\\^` + "`" + `\[\]]+`)
 	matches := urlPattern.FindAllString(body, -1)
 
-	urls := make([]models.ExtractedURL, 0, len(matches))
+	urls := make([]models.SMSExtractedURL, 0, len(matches))
 	for _, match := range matches {
 		extracted := a.analyzeURL(ctx, match)
 		urls = append(urls, extracted)
@@ -122,8 +122,8 @@ func (a *SMSAnalyzer) extractURLs(ctx context.Context, body string) []models.Ext
 }
 
 // analyzeURL analyzes a single URL for threats
-func (a *SMSAnalyzer) analyzeURL(ctx context.Context, rawURL string) models.ExtractedURL {
-	result := models.ExtractedURL{
+func (a *SMSAnalyzer) analyzeURL(ctx context.Context, rawURL string) models.SMSExtractedURL {
+	result := models.SMSExtractedURL{
 		URL:        rawURL,
 		Category:   models.URLCategoryUnknown,
 		Confidence: 0,
@@ -352,13 +352,13 @@ func (a *SMSAnalyzer) analyzeSender(sender string) *models.SenderAnalysis {
 }
 
 // checkPatterns checks message against known phishing patterns
-func (a *SMSAnalyzer) checkPatterns(body string) []models.PatternMatch {
+func (a *SMSAnalyzer) checkPatterns(body string) []models.SMSPatternMatch {
 	return a.patterns.Match(body)
 }
 
 // analyzeIntent analyzes the intent of the message
-func (a *SMSAnalyzer) analyzeIntent(body string) *models.IntentAnalysis {
-	analysis := &models.IntentAnalysis{
+func (a *SMSAnalyzer) analyzeIntent(body string) *models.SMSIntentAnalysis {
+	analysis := &models.SMSIntentAnalysis{
 		PrimaryIntent:   "unknown",
 		SuspiciousFlags: []string{},
 	}

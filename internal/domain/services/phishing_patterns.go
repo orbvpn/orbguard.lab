@@ -276,13 +276,13 @@ func (p *PhishingPatterns) initSenderPatterns() {
 }
 
 // Match finds all pattern matches in the given text
-func (p *PhishingPatterns) Match(text string) []models.PatternMatch {
-	matches := []models.PatternMatch{}
+func (p *PhishingPatterns) Match(text string) []models.SMSPatternMatch {
+	matches := []models.SMSPatternMatch{}
 
 	for _, tp := range p.textPatterns {
 		if tp.Pattern.MatchString(text) {
 			matched := tp.Pattern.FindString(text)
-			matches = append(matches, models.PatternMatch{
+			matches = append(matches, models.SMSPatternMatch{
 				PatternName: tp.Name,
 				PatternType: tp.Type,
 				MatchedText: matched,
@@ -306,12 +306,12 @@ func (p *PhishingPatterns) IsPhishingDomain(domain string) bool {
 }
 
 // MatchDomain returns domain pattern matches
-func (p *PhishingPatterns) MatchDomain(domain string) []models.PatternMatch {
-	matches := []models.PatternMatch{}
+func (p *PhishingPatterns) MatchDomain(domain string) []models.SMSPatternMatch {
+	matches := []models.SMSPatternMatch{}
 
 	for _, dp := range p.domainPatterns {
 		if dp.Pattern.MatchString(domain) {
-			matches = append(matches, models.PatternMatch{
+			matches = append(matches, models.SMSPatternMatch{
 				PatternName: dp.Name,
 				PatternType: "domain",
 				MatchedText: domain,
@@ -325,12 +325,12 @@ func (p *PhishingPatterns) MatchDomain(domain string) []models.PatternMatch {
 }
 
 // MatchSender checks if sender matches suspicious patterns
-func (p *PhishingPatterns) MatchSender(sender string) []models.PatternMatch {
-	matches := []models.PatternMatch{}
+func (p *PhishingPatterns) MatchSender(sender string) []models.SMSPatternMatch {
+	matches := []models.SMSPatternMatch{}
 
 	for _, sp := range p.senderPatterns {
 		if sp.Pattern.MatchString(sender) {
-			matches = append(matches, models.PatternMatch{
+			matches = append(matches, models.SMSPatternMatch{
 				PatternName: sp.Name,
 				PatternType: "sender",
 				MatchedText: sender,

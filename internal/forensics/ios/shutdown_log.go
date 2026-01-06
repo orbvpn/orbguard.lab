@@ -286,7 +286,7 @@ func (p *ShutdownLogParser) parseLine(line string) (models.ShutdownLogEntry, err
 
 		// Parse PID
 		pid, _ := strconv.Atoi(matches[2])
-		entry.ProcessPID = pid
+		entry.PID = pid
 
 		entry.ProcessName = strings.TrimSpace(matches[3])
 

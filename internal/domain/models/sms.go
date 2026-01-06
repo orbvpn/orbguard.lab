@@ -27,14 +27,14 @@ type SMSAnalysisResult struct {
 	Recommendations []string             `json:"recommendations,omitempty"`
 
 	// Extracted data
-	URLs            []ExtractedURL       `json:"urls,omitempty"`
+	URLs            []SMSExtractedURL    `json:"urls,omitempty"`
 	PhoneNumbers    []string             `json:"phone_numbers,omitempty"`
 	Emails          []string             `json:"emails,omitempty"`
 
 	// Detection details
-	PatternMatches  []PatternMatch       `json:"pattern_matches,omitempty"`
+	PatternMatches  []SMSPatternMatch    `json:"pattern_matches,omitempty"`
 	SenderAnalysis  *SenderAnalysis      `json:"sender_analysis,omitempty"`
-	IntentAnalysis  *IntentAnalysis      `json:"intent_analysis,omitempty"`
+	IntentAnalysis  *SMSIntentAnalysis   `json:"intent_analysis,omitempty"`
 
 	AnalyzedAt      time.Time            `json:"analyzed_at"`
 }
@@ -69,8 +69,8 @@ const (
 	SMSThreatTypeSuspiciousLink      SMSThreatType = "suspicious_link"
 )
 
-// ExtractedURL contains analysis of a URL found in the SMS
-type ExtractedURL struct {
+// SMSExtractedURL contains analysis of a URL found in the SMS
+type SMSExtractedURL struct {
 	URL           string      `json:"url"`
 	Domain        string      `json:"domain"`
 	IsMalicious   bool        `json:"is_malicious"`
@@ -84,8 +84,8 @@ type ExtractedURL struct {
 	CampaignID    string      `json:"campaign_id,omitempty"`
 }
 
-// PatternMatch represents a matched suspicious pattern
-type PatternMatch struct {
+// SMSPatternMatch represents a matched suspicious pattern in SMS
+type SMSPatternMatch struct {
 	PatternName  string  `json:"pattern_name"`
 	PatternType  string  `json:"pattern_type"`
 	MatchedText  string  `json:"matched_text"`
@@ -105,8 +105,8 @@ type SenderAnalysis struct {
 	Notes          string  `json:"notes,omitempty"`
 }
 
-// IntentAnalysis contains NLP analysis of message intent
-type IntentAnalysis struct {
+// SMSIntentAnalysis contains NLP analysis of SMS message intent
+type SMSIntentAnalysis struct {
 	PrimaryIntent   string   `json:"primary_intent"`
 	Urgency         float64  `json:"urgency"`         // 0-1 how urgent the message appears
 	FearFactor      float64  `json:"fear_factor"`     // 0-1 uses fear/threat tactics

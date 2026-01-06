@@ -177,13 +177,13 @@ func (h *SMSHandler) CheckURL(w http.ResponseWriter, r *http.Request) {
 
 	// Return just the URL analysis part
 	response := struct {
-		URL         string               `json:"url"`
-		IsMalicious bool                 `json:"is_malicious"`
-		Category    models.URLCategory   `json:"category"`
-		ThreatLevel models.ThreatLevel   `json:"threat_level"`
-		Confidence  float64              `json:"confidence"`
-		Details     string               `json:"details,omitempty"`
-		URLs        []models.ExtractedURL `json:"urls,omitempty"`
+		URL         string                  `json:"url"`
+		IsMalicious bool                    `json:"is_malicious"`
+		Category    models.URLCategory      `json:"category"`
+		ThreatLevel models.ThreatLevel      `json:"threat_level"`
+		Confidence  float64                 `json:"confidence"`
+		Details     string                  `json:"details,omitempty"`
+		URLs        []models.SMSExtractedURL `json:"urls,omitempty"`
 	}{
 		URL:         req.URL,
 		IsMalicious: result.IsThreat,

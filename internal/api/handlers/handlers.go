@@ -2,6 +2,9 @@ package handlers
 
 import (
 	"orbguard-lab/internal/domain/services"
+	"orbguard-lab/internal/domain/services/desktop_security"
+	"orbguard-lab/internal/domain/services/digital_footprint"
+	"orbguard-lab/internal/forensics"
 	"orbguard-lab/internal/infrastructure/cache"
 	"orbguard-lab/internal/infrastructure/database/repository"
 	"orbguard-lab/internal/streaming"
@@ -34,6 +37,9 @@ type Handlers struct {
 	QRSecurity      *QRSecurityHandler
 	Enterprise      *EnterpriseHandler
 	OrbNet          *OrbNetHandler
+	Forensics       *ForensicsHandler
+	Footprint       *FootprintHandler
+	DesktopSecurity *DesktopSecurityHandler
 }
 
 // Dependencies holds dependencies for handlers
@@ -63,6 +69,13 @@ type Dependencies struct {
 	STIXTAXIIService      *services.STIXTAXIIService
 	EnterpriseService     *services.EnterpriseService
 	OrbNetService         *services.OrbNetService
+	ForensicsService      *forensics.Service
+	FootprintScanner      *digital_footprint.Scanner
+	PersistenceScanner    *desktop_security.PersistenceScanner
+	CodeVerifier          *desktop_security.CodeSigningVerifier
+	NetworkMonitor        *desktop_security.NetworkMonitor
+	BrowserScanner        *desktop_security.BrowserExtensionScanner
+	VTClient              *desktop_security.VirusTotalClient
 }
 
 // NewHandlers creates all handlers
@@ -92,5 +105,15 @@ func NewHandlers(deps Dependencies) *Handlers {
 		QRSecurity:      NewQRSecurityHandler(deps.QRSecurityService, deps.Logger),
 		Enterprise:      NewEnterpriseHandler(deps.EnterpriseService, deps.Logger),
 		OrbNet:          NewOrbNetHandler(deps.OrbNetService, deps.Logger),
+		Forensics:       NewForensicsHandler(deps.ForensicsService, deps.Logger),
+		Footprint:       NewFootprintHandler(deps.FootprintScanner, deps.Logger),
+		DesktopSecurity: NewDesktopSecurityHandler(DesktopSecurityDeps{
+			PersistenceScanner: deps.PersistenceScanner,
+			CodeVerifier:       deps.CodeVerifier,
+			NetworkMonitor:     deps.NetworkMonitor,
+			BrowserScanner:     deps.BrowserScanner,
+			VTClient:           deps.VTClient,
+			Logger:             deps.Logger,
+		}),
 	}
 }
