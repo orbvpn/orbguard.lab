@@ -241,15 +241,18 @@ func (r *GraphRepository) CreateRelationshipsBySharedTags(ctx context.Context, e
 	excludeList = append(excludeList, excludeTags...)
 
 	cypher := `
-		// Find indicators sharing meaningful tags
+		// Find indicators sharing meaningful tags (limited batch for performance)
 		MATCH (i1:Indicator)
 		WHERE size(i1.tags) > 0
+		WITH i1
+		LIMIT 5000
 		UNWIND i1.tags AS tag
 		WITH i1, tag
 		WHERE NOT tag IN $exclude_tags
 		  AND NOT tag STARTS WITH 'md5'
 		  AND NOT tag STARTS WITH 'sha'
 		  AND size(tag) > 3
+		WITH i1, tag
 		MATCH (i2:Indicator)
 		WHERE i2.id <> i1.id
 		  AND tag IN i2.tags
