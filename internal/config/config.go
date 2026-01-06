@@ -278,6 +278,10 @@ func Load(configPath string) (*Config, error) {
 	v.BindEnv("nats.enabled", "ORBGUARD_NATS_ENABLED")
 	v.BindEnv("app.environment", "ORBGUARD_APP_ENVIRONMENT")
 
+	// Source API keys
+	v.BindEnv("sources.threatfox.api_key", "ORBGUARD_THREATFOX_API_KEY")
+	v.BindEnv("sources.google_safebrowsing.api_key", "ORBGUARD_SAFEBROWSING_API_KEY")
+
 	// Read config file
 	if err := v.ReadInConfig(); err != nil {
 		return nil, fmt.Errorf("failed to read config file: %w", err)

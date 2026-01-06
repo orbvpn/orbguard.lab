@@ -30,6 +30,7 @@ type ThreatFoxConnector struct {
 	enabled  bool
 	interval time.Duration
 	sourceID uuid.UUID
+	apiKey   string
 }
 
 // NewThreatFoxConnector creates a new ThreatFox connector
@@ -85,6 +86,9 @@ func (c *ThreatFoxConnector) Configure(cfg sources.ConnectorConfig) error {
 	if cfg.UpdateInterval > 0 {
 		c.interval = cfg.UpdateInterval
 	}
+	if cfg.APIKey != "" {
+		c.apiKey = cfg.APIKey
+	}
 	return nil
 }
 
@@ -138,6 +142,9 @@ func (c *ThreatFoxConnector) fetchRecentIOCs(ctx context.Context, days int) ([]m
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	if c.apiKey != "" {
+		req.Header.Set("API-KEY", c.apiKey)
+	}
 
 	resp, err := c.client.Do(req)
 	if err != nil {
