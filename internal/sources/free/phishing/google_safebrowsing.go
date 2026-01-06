@@ -136,6 +136,8 @@ func (c *SafeBrowsingConnector) Fetch(ctx context.Context) (*models.SourceFetchR
 			FirstSeen:   &now,
 			LastSeen:    &now,
 			Confidence:  &conf,
+			SourceID:    c.Slug(),
+			SourceName:  c.Name(),
 			RawData: map[string]any{
 				"source":      "google_safebrowsing",
 				"threat_type": "MALWARE",
@@ -152,6 +154,8 @@ func (c *SafeBrowsingConnector) Fetch(ctx context.Context) (*models.SourceFetchR
 			FirstSeen:   &now,
 			LastSeen:    &now,
 			Confidence:  &conf,
+			SourceID:    c.Slug(),
+			SourceName:  c.Name(),
 			RawData: map[string]any{
 				"source":      "google_safebrowsing",
 				"threat_type": "SOCIAL_ENGINEERING",
@@ -168,6 +172,8 @@ func (c *SafeBrowsingConnector) Fetch(ctx context.Context) (*models.SourceFetchR
 			FirstSeen:   &now,
 			LastSeen:    &now,
 			Confidence:  &conf,
+			SourceID:    c.Slug(),
+			SourceName:  c.Name(),
 			RawData: map[string]any{
 				"source":      "google_safebrowsing",
 				"threat_type": "UNWANTED_SOFTWARE",
@@ -184,6 +190,8 @@ func (c *SafeBrowsingConnector) Fetch(ctx context.Context) (*models.SourceFetchR
 			FirstSeen:   &now,
 			LastSeen:    &now,
 			Confidence:  &conf,
+			SourceID:    c.Slug(),
+			SourceName:  c.Name(),
 			RawData: map[string]any{
 				"source":      "google_safebrowsing",
 				"threat_type": "POTENTIALLY_HARMFUL_APPLICATION",
@@ -373,15 +381,17 @@ func (c *SafeBrowsingConnector) parseListUpdates(response threatListUpdatesRespo
 					FirstSeen:   &now,
 					LastSeen:    &now,
 					Confidence:  &baseConf,
+					SourceID:    c.Slug(),
+					SourceName:  c.Name(),
 					RawData: map[string]any{
-						"source":           "google_safebrowsing",
-						"threat_type":      string(listResp.ThreatType),
-						"platform_type":    string(listResp.PlatformType),
+						"source":            "google_safebrowsing",
+						"threat_type":       string(listResp.ThreatType),
+						"platform_type":     string(listResp.PlatformType),
 						"threat_entry_type": string(listResp.ThreatEntryType),
-						"response_type":    listResp.ResponseType,
-						"prefix_size":      addition.RawHashes.PrefixSize,
-						"compression_type": addition.CompressionType,
-						"new_client_state": listResp.NewClientState,
+						"response_type":     listResp.ResponseType,
+						"prefix_size":       addition.RawHashes.PrefixSize,
+						"compression_type":  addition.CompressionType,
+						"new_client_state":  listResp.NewClientState,
 					},
 				}
 				indicators = append(indicators, indicator)

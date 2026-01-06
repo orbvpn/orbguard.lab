@@ -174,6 +174,8 @@ func (c *CitizenLabConnector) fetchFile(ctx context.Context, url string, iocType
 			Description: description,
 			Tags:        tags,
 			Confidence:  &confidence,
+			SourceID:    c.Slug(),
+			SourceName:  c.Name(),
 		})
 	}
 
@@ -325,6 +327,8 @@ func (c *AmnestyMVTConnector) fetchTextFile(ctx context.Context, url string, ioc
 			Description: description,
 			Tags:        tags,
 			Confidence:  &confidence,
+			SourceID:    c.Slug(),
+			SourceName:  c.Name(),
 		})
 	}
 

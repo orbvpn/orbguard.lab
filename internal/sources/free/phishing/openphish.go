@@ -174,6 +174,8 @@ func (c *OpenPhishConnector) parsePhishingURLs(reader io.Reader) ([]models.RawIn
 			FirstSeen:   &now,
 			LastSeen:    &now,
 			Confidence:  &conf,
+			SourceID:    c.Slug(),
+			SourceName:  c.Name(),
 			RawData: map[string]any{
 				"source": "openphish",
 				"host":   parsedURL.Host,
@@ -200,9 +202,11 @@ func (c *OpenPhishConnector) parsePhishingURLs(reader io.Reader) ([]models.RawIn
 				FirstSeen:   &now,
 				LastSeen:    &now,
 				Confidence:  &conf,
+				SourceID:    c.Slug(),
+				SourceName:  c.Name(),
 				RawData: map[string]any{
-					"source":    "openphish",
-					"from_url":  line,
+					"source":   "openphish",
+					"from_url": line,
 				},
 			}
 			indicators = append(indicators, domainIndicator)

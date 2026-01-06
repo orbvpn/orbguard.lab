@@ -146,6 +146,8 @@ func (c *CISAKEVConnector) parseVulnerabilities(vulns []cisaVulnerability) []mod
 			Severity:    c.mapSeverity(vuln),
 			Description: c.formatDescription(vuln),
 			Tags:        c.buildTags(vuln),
+			SourceID:    c.Slug(),
+			SourceName:  "CISA KEV",
 			RawData: map[string]any{
 				"cve_id":             vuln.CVEID,
 				"vendor_project":     vuln.VendorProject,
