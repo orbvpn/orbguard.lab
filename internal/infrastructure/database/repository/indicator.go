@@ -83,7 +83,7 @@ func (r *IndicatorRepository) Create(ctx context.Context, i *models.Indicator) (
 		ValueHash:       i.ValueHash,
 		Type:            i.Type,
 		Severity:        i.Severity,
-		Confidence:      floatToNumeric(i.Confidence),
+		Confidence:      floatToFloat8(i.Confidence),
 		Description:     textOrNull(i.Description),
 		Tags:            i.Tags,
 		Platforms:       platformsToStrings(i.Platforms),
@@ -139,7 +139,7 @@ func (r *IndicatorRepository) Upsert(ctx context.Context, i *models.Indicator) (
 		ValueHash:       i.ValueHash,
 		Type:            i.Type,
 		Severity:        i.Severity,
-		Confidence:      floatToNumeric(i.Confidence),
+		Confidence:      floatToFloat8(i.Confidence),
 		Description:     textOrNull(i.Description),
 		Tags:            i.Tags,
 		Platforms:       platformsToStrings(i.Platforms),
@@ -619,7 +619,7 @@ func (r *IndicatorRepository) GetStats(ctx context.Context) (*IndicatorStats, er
 func (r *IndicatorRepository) UpdateConfidence(ctx context.Context, id uuid.UUID, confidence float64) error {
 	return r.queries.UpdateIndicatorConfidence(ctx, &db.UpdateIndicatorConfidenceParams{
 		ID:         id,
-		Confidence: floatToNumeric(confidence),
+		Confidence: floatToFloat8(confidence),
 	})
 }
 
@@ -664,7 +664,7 @@ func dbIndicatorToModel(i *db.Indicator) *models.Indicator {
 		ValueHash:       i.ValueHash,
 		Type:            i.Type,
 		Severity:        i.Severity,
-		Confidence:      numericToFloat(i.Confidence),
+		Confidence:      float8ToFloat(i.Confidence),
 		Description:     nullTextToString(i.Description),
 		Tags:            i.Tags,
 		Platforms:       stringsToPlatforms(i.Platforms),
@@ -694,7 +694,7 @@ type indicatorRow interface {
 	GetValueHash() string
 	GetType() string
 	GetSeverity() string
-	GetConfidence() pgtype.Numeric
+	GetConfidence() pgtype.Float8
 	GetDescription() pgtype.Text
 	GetTags() []string
 	GetPlatforms() []string
@@ -719,7 +719,7 @@ type indicatorRow interface {
 func convertIndicatorRow(
 	id uuid.UUID,
 	value, valueHash, typeStr, severityStr string,
-	confidence pgtype.Numeric,
+	confidence pgtype.Float8,
 	description pgtype.Text,
 	tags, platforms []string,
 	firstSeen, lastSeen, expiresAt pgtype.Timestamptz,
@@ -736,7 +736,7 @@ func convertIndicatorRow(
 		ValueHash:       valueHash,
 		Type:            models.IndicatorType(typeStr),
 		Severity:        models.Severity(severityStr),
-		Confidence:      numericToFloat(confidence),
+		Confidence:      float8ToFloat(confidence),
 		Description:     nullTextToString(description),
 		Tags:            tags,
 		Platforms:       stringsToPlatforms(platforms),
@@ -913,7 +913,7 @@ func scanIndicatorRow(rows pgx.Rows) (*models.Indicator, error) {
 		valueHash       string
 		typeStr         string
 		severityStr     string
-		confidence      pgtype.Numeric
+		confidence      pgtype.Float8
 		description     pgtype.Text
 		tags            []string
 		platforms       []string

@@ -119,7 +119,7 @@ type CreateIndicatorParams struct {
 	ValueHash       string               `db:"value_hash" json:"value_hash"`
 	Type            models.IndicatorType `db:"type" json:"type"`
 	Severity        models.Severity      `db:"severity" json:"severity"`
-	Confidence      pgtype.Numeric       `db:"confidence" json:"confidence"`
+	Confidence      pgtype.Float8        `db:"confidence" json:"confidence"`
 	Description     pgtype.Text          `db:"description" json:"description"`
 	Tags            []string             `db:"tags" json:"tags"`
 	Platforms       []string             `db:"platforms" json:"platforms"`
@@ -143,7 +143,7 @@ type CreateIndicatorRow struct {
 	ValueHash       string             `db:"value_hash" json:"value_hash"`
 	Type            string             `db:"type" json:"type"`
 	Severity        string             `db:"severity" json:"severity"`
-	Confidence      pgtype.Numeric     `db:"confidence" json:"confidence"`
+	Confidence      pgtype.Float8      `db:"confidence" json:"confidence"`
 	Description     pgtype.Text        `db:"description" json:"description"`
 	Tags            []string           `db:"tags" json:"tags"`
 	Platforms       []string           `db:"platforms" json:"platforms"`
@@ -255,7 +255,7 @@ type GetIndicatorByHashRow struct {
 	ValueHash       string             `db:"value_hash" json:"value_hash"`
 	Type            string             `db:"type" json:"type"`
 	Severity        string             `db:"severity" json:"severity"`
-	Confidence      pgtype.Numeric     `db:"confidence" json:"confidence"`
+	Confidence      pgtype.Float8      `db:"confidence" json:"confidence"`
 	Description     pgtype.Text        `db:"description" json:"description"`
 	Tags            []string           `db:"tags" json:"tags"`
 	Platforms       []string           `db:"platforms" json:"platforms"`
@@ -324,7 +324,7 @@ type GetIndicatorByIDRow struct {
 	ValueHash       string             `db:"value_hash" json:"value_hash"`
 	Type            string             `db:"type" json:"type"`
 	Severity        string             `db:"severity" json:"severity"`
-	Confidence      pgtype.Numeric     `db:"confidence" json:"confidence"`
+	Confidence      pgtype.Float8      `db:"confidence" json:"confidence"`
 	Description     pgtype.Text        `db:"description" json:"description"`
 	Tags            []string           `db:"tags" json:"tags"`
 	Platforms       []string           `db:"platforms" json:"platforms"`
@@ -398,7 +398,7 @@ type GetIndicatorByValueRow struct {
 	ValueHash       string             `db:"value_hash" json:"value_hash"`
 	Type            string             `db:"type" json:"type"`
 	Severity        string             `db:"severity" json:"severity"`
-	Confidence      pgtype.Numeric     `db:"confidence" json:"confidence"`
+	Confidence      pgtype.Float8      `db:"confidence" json:"confidence"`
 	Description     pgtype.Text        `db:"description" json:"description"`
 	Tags            []string           `db:"tags" json:"tags"`
 	Platforms       []string           `db:"platforms" json:"platforms"`
@@ -611,7 +611,7 @@ type ListActiveIndicatorsRow struct {
 	ValueHash       string             `db:"value_hash" json:"value_hash"`
 	Type            string             `db:"type" json:"type"`
 	Severity        string             `db:"severity" json:"severity"`
-	Confidence      pgtype.Numeric     `db:"confidence" json:"confidence"`
+	Confidence      pgtype.Float8      `db:"confidence" json:"confidence"`
 	Description     pgtype.Text        `db:"description" json:"description"`
 	Tags            []string           `db:"tags" json:"tags"`
 	Platforms       []string           `db:"platforms" json:"platforms"`
@@ -702,7 +702,7 @@ type ListCriticalIndicatorsRow struct {
 	ValueHash       string             `db:"value_hash" json:"value_hash"`
 	Type            string             `db:"type" json:"type"`
 	Severity        string             `db:"severity" json:"severity"`
-	Confidence      pgtype.Numeric     `db:"confidence" json:"confidence"`
+	Confidence      pgtype.Float8      `db:"confidence" json:"confidence"`
 	Description     pgtype.Text        `db:"description" json:"description"`
 	Tags            []string           `db:"tags" json:"tags"`
 	Platforms       []string           `db:"platforms" json:"platforms"`
@@ -791,7 +791,7 @@ type ListIndicatorsRow struct {
 	ValueHash       string             `db:"value_hash" json:"value_hash"`
 	Type            string             `db:"type" json:"type"`
 	Severity        string             `db:"severity" json:"severity"`
-	Confidence      pgtype.Numeric     `db:"confidence" json:"confidence"`
+	Confidence      pgtype.Float8      `db:"confidence" json:"confidence"`
 	Description     pgtype.Text        `db:"description" json:"description"`
 	Tags            []string           `db:"tags" json:"tags"`
 	Platforms       []string           `db:"platforms" json:"platforms"`
@@ -882,7 +882,7 @@ type ListIndicatorsByCampaignRow struct {
 	ValueHash       string             `db:"value_hash" json:"value_hash"`
 	Type            string             `db:"type" json:"type"`
 	Severity        string             `db:"severity" json:"severity"`
-	Confidence      pgtype.Numeric     `db:"confidence" json:"confidence"`
+	Confidence      pgtype.Float8      `db:"confidence" json:"confidence"`
 	Description     pgtype.Text        `db:"description" json:"description"`
 	Tags            []string           `db:"tags" json:"tags"`
 	Platforms       []string           `db:"platforms" json:"platforms"`
@@ -973,7 +973,7 @@ type ListIndicatorsBySeverityRow struct {
 	ValueHash       string             `db:"value_hash" json:"value_hash"`
 	Type            string             `db:"type" json:"type"`
 	Severity        string             `db:"severity" json:"severity"`
-	Confidence      pgtype.Numeric     `db:"confidence" json:"confidence"`
+	Confidence      pgtype.Float8      `db:"confidence" json:"confidence"`
 	Description     pgtype.Text        `db:"description" json:"description"`
 	Tags            []string           `db:"tags" json:"tags"`
 	Platforms       []string           `db:"platforms" json:"platforms"`
@@ -1064,7 +1064,7 @@ type ListIndicatorsByTypeRow struct {
 	ValueHash       string             `db:"value_hash" json:"value_hash"`
 	Type            string             `db:"type" json:"type"`
 	Severity        string             `db:"severity" json:"severity"`
-	Confidence      pgtype.Numeric     `db:"confidence" json:"confidence"`
+	Confidence      pgtype.Float8      `db:"confidence" json:"confidence"`
 	Description     pgtype.Text        `db:"description" json:"description"`
 	Tags            []string           `db:"tags" json:"tags"`
 	Platforms       []string           `db:"platforms" json:"platforms"`
@@ -1154,7 +1154,7 @@ type ListMobileIndicatorsRow struct {
 	ValueHash       string             `db:"value_hash" json:"value_hash"`
 	Type            string             `db:"type" json:"type"`
 	Severity        string             `db:"severity" json:"severity"`
-	Confidence      pgtype.Numeric     `db:"confidence" json:"confidence"`
+	Confidence      pgtype.Float8      `db:"confidence" json:"confidence"`
 	Description     pgtype.Text        `db:"description" json:"description"`
 	Tags            []string           `db:"tags" json:"tags"`
 	Platforms       []string           `db:"platforms" json:"platforms"`
@@ -1244,7 +1244,7 @@ type ListPegasusIndicatorsRow struct {
 	ValueHash       string             `db:"value_hash" json:"value_hash"`
 	Type            string             `db:"type" json:"type"`
 	Severity        string             `db:"severity" json:"severity"`
-	Confidence      pgtype.Numeric     `db:"confidence" json:"confidence"`
+	Confidence      pgtype.Float8      `db:"confidence" json:"confidence"`
 	Description     pgtype.Text        `db:"description" json:"description"`
 	Tags            []string           `db:"tags" json:"tags"`
 	Platforms       []string           `db:"platforms" json:"platforms"`
@@ -1336,7 +1336,7 @@ type SearchIndicatorsRow struct {
 	ValueHash       string             `db:"value_hash" json:"value_hash"`
 	Type            string             `db:"type" json:"type"`
 	Severity        string             `db:"severity" json:"severity"`
-	Confidence      pgtype.Numeric     `db:"confidence" json:"confidence"`
+	Confidence      pgtype.Float8      `db:"confidence" json:"confidence"`
 	Description     pgtype.Text        `db:"description" json:"description"`
 	Tags            []string           `db:"tags" json:"tags"`
 	Platforms       []string           `db:"platforms" json:"platforms"`
@@ -1409,8 +1409,8 @@ WHERE id = $1
 `
 
 type UpdateIndicatorConfidenceParams struct {
-	ID         uuid.UUID      `db:"id" json:"id"`
-	Confidence pgtype.Numeric `db:"confidence" json:"confidence"`
+	ID         uuid.UUID     `db:"id" json:"id"`
+	Confidence pgtype.Float8 `db:"confidence" json:"confidence"`
 }
 
 func (q *Queries) UpdateIndicatorConfidence(ctx context.Context, arg *UpdateIndicatorConfidenceParams) error {
@@ -1461,7 +1461,7 @@ type UpsertIndicatorParams struct {
 	ValueHash       string               `db:"value_hash" json:"value_hash"`
 	Type            models.IndicatorType `db:"type" json:"type"`
 	Severity        models.Severity      `db:"severity" json:"severity"`
-	Confidence      pgtype.Numeric       `db:"confidence" json:"confidence"`
+	Confidence      pgtype.Float8        `db:"confidence" json:"confidence"`
 	Description     pgtype.Text          `db:"description" json:"description"`
 	Tags            []string             `db:"tags" json:"tags"`
 	Platforms       []string             `db:"platforms" json:"platforms"`
@@ -1483,7 +1483,7 @@ type UpsertIndicatorRow struct {
 	ValueHash       string             `db:"value_hash" json:"value_hash"`
 	Type            string             `db:"type" json:"type"`
 	Severity        string             `db:"severity" json:"severity"`
-	Confidence      pgtype.Numeric     `db:"confidence" json:"confidence"`
+	Confidence      pgtype.Float8      `db:"confidence" json:"confidence"`
 	Description     pgtype.Text        `db:"description" json:"description"`
 	Tags            []string           `db:"tags" json:"tags"`
 	Platforms       []string           `db:"platforms" json:"platforms"`

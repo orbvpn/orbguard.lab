@@ -262,7 +262,7 @@ CREATE TABLE indicators (
     value_hash VARCHAR(64) NOT NULL, -- SHA256 for deduplication
     type indicator_type NOT NULL,
     severity severity_level NOT NULL DEFAULT 'medium',
-    confidence DECIMAL(3,2) NOT NULL DEFAULT 0.50,
+    confidence DOUBLE PRECISION DEFAULT 0.5,
     description TEXT,
     tags TEXT[],
     platforms platform_type[],

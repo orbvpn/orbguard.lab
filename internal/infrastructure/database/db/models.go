@@ -528,7 +528,7 @@ type Indicator struct {
 	ValueHash       string               `db:"value_hash" json:"value_hash"`
 	Type            models.IndicatorType `db:"type" json:"type"`
 	Severity        models.Severity      `db:"severity" json:"severity"`
-	Confidence      pgtype.Numeric       `db:"confidence" json:"confidence"`
+	Confidence      pgtype.Float8        `db:"confidence" json:"confidence"`
 	Description     pgtype.Text          `db:"description" json:"description"`
 	Tags            []string             `db:"tags" json:"tags"`
 	Platforms       []string             `db:"platforms" json:"platforms"`

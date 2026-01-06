@@ -44,6 +44,19 @@ func numericToFloat(n pgtype.Numeric) float64 {
 	return f.Float64
 }
 
+// Float8 conversion helpers (for DOUBLE PRECISION columns)
+
+func floatToFloat8(f float64) pgtype.Float8 {
+	return pgtype.Float8{Float64: f, Valid: true}
+}
+
+func float8ToFloat(f pgtype.Float8) float64 {
+	if !f.Valid {
+		return 0
+	}
+	return f.Float64
+}
+
 // Text conversion helpers
 
 func textOrNull(s string) pgtype.Text {
