@@ -143,7 +143,7 @@ func (c *ThreatFoxConnector) fetchRecentIOCs(ctx context.Context, days int) ([]m
 	}
 	req.Header.Set("Content-Type", "application/json")
 	if c.apiKey != "" {
-		req.Header.Set("API-KEY", c.apiKey)
+		req.Header.Set("Auth-Key", c.apiKey)
 	}
 
 	resp, err := c.client.Do(req)
