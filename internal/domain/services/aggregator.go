@@ -418,6 +418,9 @@ func (a *Aggregator) fetchFromSourceWithDB(ctx context.Context, conn SourceConne
 			}
 		}
 
+		// Mark as seen AFTER successful storage to avoid losing data on storage failures
+		a.deduplicator.MarkSeen(ctx, indicator.ValueHash)
+
 		// Publish real-time event for new threat
 		if a.publisher != nil {
 			if err := a.publisher.PublishNewThreat(ctx, indicator, source.Slug, source.Name); err != nil {
@@ -517,6 +520,9 @@ func (a *Aggregator) fetchFromSource(ctx context.Context, conn SourceConnector) 
 				continue
 			}
 		}
+
+		// Mark as seen AFTER successful storage to avoid losing data on storage failures
+		a.deduplicator.MarkSeen(ctx, indicator.ValueHash)
 
 		// Publish real-time event for new threat
 		if a.publisher != nil {

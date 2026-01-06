@@ -61,8 +61,7 @@ func (d *Deduplicator) Deduplicate(ctx context.Context, indicators []*models.Ind
 			result.DuplicateCount++
 		} else {
 			result.NewIndicators = append(result.NewIndicators, indicator)
-			// Mark as seen
-			d.MarkSeen(ctx, indicator.ValueHash)
+			// Note: MarkSeen is called by aggregator AFTER successful storage
 		}
 	}
 
