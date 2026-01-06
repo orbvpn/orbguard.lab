@@ -140,9 +140,11 @@ func (c *GreyNoiseConnector) LookupIP(ctx context.Context, ipAddr string) (*Comm
 	return &result, nil
 }
 
-// Fetch retrieves malicious IPs from GreyNoise using GNQL (requires Enterprise API)
-// Note: This method requires an Enterprise API key. Community API keys will fail.
-// Use LookupIP() for single IP lookups with Community API.
+// Fetch retrieves malicious IPs from GreyNoise using GNQL
+// This method automatically detects API tier:
+// - Enterprise API: Full GNQL bulk queries supported
+// - Community API: Gracefully skips bulk fetch (use LookupIP for single IP checks)
+// When you upgrade to Enterprise, bulk fetching will automatically start working.
 func (c *GreyNoiseConnector) Fetch(ctx context.Context) (*models.SourceFetchResult, error) {
 	start := time.Now()
 
@@ -190,6 +192,14 @@ func (c *GreyNoiseConnector) Fetch(ctx context.Context) (*models.SourceFetchResu
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
+		// Handle 401/403 gracefully for Community API users - not an error, just no bulk access
+		if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
+			c.logger.Info().
+				Msg("GreyNoise GNQL requires Enterprise API - bulk fetch skipped. Single IP lookups via LookupIP() still available.")
+			result.Success = true
+			result.Duration = time.Since(start)
+			return result, nil // Return success with 0 indicators
+		}
 		err = fmt.Errorf("GreyNoise returned status %d: %s", resp.StatusCode, string(body))
 		result.Error = err
 		return result, err

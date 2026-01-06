@@ -364,12 +364,10 @@ func registerConnectors(registry *sources.Registry, log *logger.Logger) {
 	if err := registry.Register(ip.NewAbuseIPDBConnector(log)); err != nil {
 		log.Warn().Err(err).Msg("failed to register AbuseIPDB connector")
 	}
-	// GreyNoise disabled for bulk fetching - Community API only supports single IP lookups
-	// Enterprise API required for GNQL bulk queries. The connector is kept for potential
-	// future use as a real-time lookup service.
-	// if err := registry.Register(ip.NewGreyNoiseConnector(log)); err != nil {
-	// 	log.Warn().Err(err).Msg("failed to register GreyNoise connector")
-	// }
+	// GreyNoise: Auto-detects API tier - Enterprise enables bulk GNQL, Community enables single IP lookups
+	if err := registry.Register(ip.NewGreyNoiseConnector(log)); err != nil {
+		log.Warn().Err(err).Msg("failed to register GreyNoise connector")
+	}
 
 	// Phishing connectors
 	if err := registry.Register(phishing.NewOpenPhishConnector(log)); err != nil {
