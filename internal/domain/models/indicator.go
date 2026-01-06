@@ -22,6 +22,7 @@ const (
 	IndicatorTypeFilePath    IndicatorType = "filepath"
 	IndicatorTypeRegistry    IndicatorType = "registry"
 	IndicatorTypeYARA        IndicatorType = "yara"
+	IndicatorTypeCVE         IndicatorType = "cve"
 )
 
 // Severity represents the threat severity level
@@ -201,6 +202,8 @@ func ParseIndicatorType(s string) IndicatorType {
 		return IndicatorTypeRegistry
 	case "yara":
 		return IndicatorTypeYARA
+	case "cve":
+		return IndicatorTypeCVE
 	default:
 		return IndicatorType(s)
 	}

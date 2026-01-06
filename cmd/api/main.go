@@ -26,6 +26,7 @@ import (
 	"orbguard-lab/internal/sources/free/ip"
 	"orbguard-lab/internal/sources/free/mobile"
 	"orbguard-lab/internal/sources/free/phishing"
+	"orbguard-lab/internal/sources/premium"
 	"orbguard-lab/internal/streaming"
 	"orbguard-lab/pkg/logger"
 )
@@ -388,6 +389,17 @@ func registerConnectors(registry *sources.Registry, log *logger.Logger) {
 	}
 	if err := registry.Register(mobile.NewAmnestyMVTConnector(log)); err != nil {
 		log.Warn().Err(err).Msg("failed to register AmnestyMVT connector")
+	}
+
+	// Premium connectors (require API keys)
+	if err := registry.Register(premium.NewVirusTotalConnector(log)); err != nil {
+		log.Warn().Err(err).Msg("failed to register VirusTotal connector")
+	}
+	if err := registry.Register(premium.NewAlienVaultOTXConnector(log)); err != nil {
+		log.Warn().Err(err).Msg("failed to register AlienVault OTX connector")
+	}
+	if err := registry.Register(premium.NewKoodousConnector(log)); err != nil {
+		log.Warn().Err(err).Msg("failed to register Koodous connector")
 	}
 
 	log.Info().

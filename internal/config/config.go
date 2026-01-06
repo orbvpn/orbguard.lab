@@ -284,6 +284,9 @@ func Load(configPath string) (*Config, error) {
 	v.BindEnv("sources.google_safebrowsing.api_key", "ORBGUARD_SAFEBROWSING_API_KEY")
 	v.BindEnv("sources.abuseipdb.api_key", "ORBGUARD_ABUSEIPDB_API_KEY")
 	v.BindEnv("sources.greynoise.api_key", "ORBGUARD_GREYNOISE_API_KEY")
+	v.BindEnv("sources.virustotal.api_key", "ORBGUARD_VIRUSTOTAL_API_KEY")
+	v.BindEnv("sources.alienvault_otx.api_key", "ORBGUARD_ALIENVAULT_OTX_API_KEY")
+	v.BindEnv("sources.koodous.api_key", "ORBGUARD_KOODOUS_API_KEY")
 
 	// Read config file
 	if err := v.ReadInConfig(); err != nil {
