@@ -282,6 +282,8 @@ func Load(configPath string) (*Config, error) {
 	// Source API keys
 	v.BindEnv("sources.threatfox.api_key", "ORBGUARD_THREATFOX_API_KEY")
 	v.BindEnv("sources.google_safebrowsing.api_key", "ORBGUARD_SAFEBROWSING_API_KEY")
+	v.BindEnv("sources.abuseipdb.api_key", "ORBGUARD_ABUSEIPDB_API_KEY")
+	v.BindEnv("sources.greynoise.api_key", "ORBGUARD_GREYNOISE_API_KEY")
 
 	// Read config file
 	if err := v.ReadInConfig(); err != nil {

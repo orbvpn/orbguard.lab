@@ -139,6 +139,7 @@ func (r *Registry) ConfigureFromSourcesConfig(cfg config.SourcesConfig) {
 		"openphish":           cfg.OpenPhish,
 		"phishtank":           cfg.PhishTank,
 		"google_safebrowsing": cfg.GoogleSafeBrowsing,
+		"safebrowsing":        cfg.GoogleSafeBrowsing, // Alias
 		"abuseipdb":           cfg.AbuseIPDB,
 		"greynoise":           cfg.GreyNoise,
 		"citizenlab":          cfg.CitizenLab,

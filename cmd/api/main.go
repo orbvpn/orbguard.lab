@@ -23,6 +23,7 @@ import (
 	"orbguard-lab/internal/sources"
 	"orbguard-lab/internal/sources/free/abusech"
 	"orbguard-lab/internal/sources/free/government"
+	"orbguard-lab/internal/sources/free/ip"
 	"orbguard-lab/internal/sources/free/mobile"
 	"orbguard-lab/internal/sources/free/phishing"
 	"orbguard-lab/internal/streaming"
@@ -347,6 +348,23 @@ func registerConnectors(registry *sources.Registry, log *logger.Logger) {
 	}
 	if err := registry.Register(abusech.NewThreatFoxConnector(log)); err != nil {
 		log.Warn().Err(err).Msg("failed to register ThreatFox connector")
+	}
+	if err := registry.Register(abusech.NewMalwareBazaarConnector(log)); err != nil {
+		log.Warn().Err(err).Msg("failed to register MalwareBazaar connector")
+	}
+	if err := registry.Register(abusech.NewFeodoTrackerConnector(log)); err != nil {
+		log.Warn().Err(err).Msg("failed to register FeodoTracker connector")
+	}
+	if err := registry.Register(abusech.NewSSLBlacklistConnector(log)); err != nil {
+		log.Warn().Err(err).Msg("failed to register SSLBlacklist connector")
+	}
+
+	// IP Reputation connectors
+	if err := registry.Register(ip.NewAbuseIPDBConnector(log)); err != nil {
+		log.Warn().Err(err).Msg("failed to register AbuseIPDB connector")
+	}
+	if err := registry.Register(ip.NewGreyNoiseConnector(log)); err != nil {
+		log.Warn().Err(err).Msg("failed to register GreyNoise connector")
 	}
 
 	// Phishing connectors
