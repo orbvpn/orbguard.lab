@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 
 	"orbguard-lab/internal/domain/models"
+	"orbguard-lab/internal/sources"
 	"orbguard-lab/pkg/logger"
 )
 
@@ -48,6 +49,16 @@ func (c *ThreatFoxConnector) Slug() string {
 	return threatFoxSlug
 }
 
+// Name returns the human-readable name of this source
+func (c *ThreatFoxConnector) Name() string {
+	return "ThreatFox"
+}
+
+// Category returns the category of this source
+func (c *ThreatFoxConnector) Category() models.SourceCategory {
+	return models.SourceCategoryAbuseCH
+}
+
 // IsEnabled returns whether this source is enabled
 func (c *ThreatFoxConnector) IsEnabled() bool {
 	return c.enabled
@@ -66,6 +77,15 @@ func (c *ThreatFoxConnector) UpdateInterval() time.Duration {
 // SetSourceID sets the database source ID
 func (c *ThreatFoxConnector) SetSourceID(id uuid.UUID) {
 	c.sourceID = id
+}
+
+// Configure configures the connector with the given config
+func (c *ThreatFoxConnector) Configure(cfg sources.ConnectorConfig) error {
+	c.enabled = cfg.Enabled
+	if cfg.UpdateInterval > 0 {
+		c.interval = cfg.UpdateInterval
+	}
+	return nil
 }
 
 // Fetch retrieves indicators from ThreatFox

@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 
 	"orbguard-lab/internal/domain/models"
+	"orbguard-lab/internal/sources"
 	"orbguard-lab/pkg/logger"
 )
 
@@ -46,6 +47,16 @@ func (c *CISAKEVConnector) Slug() string {
 	return cisaKEVSlug
 }
 
+// Name returns the human-readable name of this source
+func (c *CISAKEVConnector) Name() string {
+	return "CISA KEV"
+}
+
+// Category returns the category of this source
+func (c *CISAKEVConnector) Category() models.SourceCategory {
+	return models.SourceCategoryGovernment
+}
+
 // IsEnabled returns whether this source is enabled
 func (c *CISAKEVConnector) IsEnabled() bool {
 	return c.enabled
@@ -64,6 +75,15 @@ func (c *CISAKEVConnector) UpdateInterval() time.Duration {
 // SetSourceID sets the database source ID
 func (c *CISAKEVConnector) SetSourceID(id uuid.UUID) {
 	c.sourceID = id
+}
+
+// Configure configures the connector with the given config
+func (c *CISAKEVConnector) Configure(cfg sources.ConnectorConfig) error {
+	c.enabled = cfg.Enabled
+	if cfg.UpdateInterval > 0 {
+		c.interval = cfg.UpdateInterval
+	}
+	return nil
 }
 
 // Fetch retrieves vulnerabilities from CISA KEV catalog
