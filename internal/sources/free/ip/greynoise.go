@@ -17,8 +17,9 @@ import (
 )
 
 const (
-	greyNoiseAPIURL = "https://api.greynoise.io/v2/experimental/gnql"
-	greyNoiseSlug   = "greynoise"
+	greyNoiseGNQLURL      = "https://api.greynoise.io/v2/experimental/gnql" // Enterprise only
+	greyNoiseCommunityURL = "https://api.greynoise.io/v3/community"         // Free tier
+	greyNoiseSlug         = "greynoise"
 )
 
 // GreyNoiseConnector fetches malicious IPs from GreyNoise
@@ -89,7 +90,59 @@ type greyNoiseMetadata struct {
 	RDNS         string `json:"rdns"`
 }
 
-// Fetch retrieves malicious IPs from GreyNoise using GNQL
+// CommunityLookupResult represents a single IP lookup from the Community API
+type CommunityLookupResult struct {
+	IP             string `json:"ip"`
+	Noise          bool   `json:"noise"`
+	RIOT           bool   `json:"riot"`
+	Classification string `json:"classification"` // benign, malicious, unknown
+	Name           string `json:"name"`
+	Link           string `json:"link"`
+	LastSeen       string `json:"last_seen"`
+	Message        string `json:"message"`
+}
+
+// LookupIP checks a single IP using the GreyNoise Community API (free tier)
+func (c *GreyNoiseConnector) LookupIP(ctx context.Context, ipAddr string) (*CommunityLookupResult, error) {
+	if c.apiKey == "" {
+		return nil, fmt.Errorf("GreyNoise API key not configured")
+	}
+
+	url := fmt.Sprintf("%s/%s", greyNoiseCommunityURL, ipAddr)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("key", c.apiKey)
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("GreyNoise returned status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var result CommunityLookupResult
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	return &result, nil
+}
+
+// Fetch retrieves malicious IPs from GreyNoise using GNQL (requires Enterprise API)
+// Note: This method requires an Enterprise API key. Community API keys will fail.
+// Use LookupIP() for single IP lookups with Community API.
 func (c *GreyNoiseConnector) Fetch(ctx context.Context) (*models.SourceFetchResult, error) {
 	start := time.Now()
 
@@ -110,7 +163,7 @@ func (c *GreyNoiseConnector) Fetch(ctx context.Context) (*models.SourceFetchResu
 	// Query for malicious IPs seen in the last 7 days
 	query := "classification:malicious last_seen:7d"
 
-	req, err := http.NewRequestWithContext(ctx, "GET", greyNoiseAPIURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", greyNoiseGNQLURL, nil)
 	if err != nil {
 		result.Error = err
 		return result, err
