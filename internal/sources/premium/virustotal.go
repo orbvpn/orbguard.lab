@@ -136,9 +136,9 @@ func (c *VirusTotalConnector) Fetch(ctx context.Context) (*models.SourceFetchRes
 	// If that fails, gracefully return success with 0 indicators
 	indicators, err := c.fetchPopularFiles(ctx)
 	if err != nil {
-		// Check if it's a rate limit or premium feature error
-		if strings.Contains(err.Error(), "429") || strings.Contains(err.Error(), "403") {
-			c.logger.Info().Msg("VirusTotal API rate limited or premium feature required - skipping bulk fetch")
+		// Check if it's a rate limit, premium feature, or bad request error (Intelligence API requires Enterprise)
+		if strings.Contains(err.Error(), "429") || strings.Contains(err.Error(), "403") || strings.Contains(err.Error(), "400") {
+			c.logger.Info().Msg("VirusTotal Intelligence API requires Enterprise subscription - skipping bulk fetch. Single hash lookups via LookupHash() still available.")
 			result.Success = true
 			result.Duration = time.Since(start)
 			return result, nil

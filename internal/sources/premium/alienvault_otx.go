@@ -76,7 +76,7 @@ type otxPulse struct {
 }
 
 type otxIndicator struct {
-	ID          string `json:"id"`
+	ID          any    `json:"id"` // Can be string or number
 	Indicator   string `json:"indicator"`
 	Type        string `json:"type"`
 	Created     string `json:"created"`

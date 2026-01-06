@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	koodousAPIURL = "https://api.koodous.com"
+	koodousAPIURL = "https://developer.koodous.com"
 	koodousSlug   = "koodous"
 )
 
