@@ -276,6 +276,10 @@ func Load(configPath string) (*Config, error) {
 	v.BindEnv("database.dbname", "ORBGUARD_DATABASE_DBNAME")
 	v.BindEnv("database.sslmode", "ORBGUARD_DATABASE_SSLMODE")
 	v.BindEnv("neo4j.enabled", "ORBGUARD_NEO4J_ENABLED")
+	v.BindEnv("neo4j.uri", "ORBGUARD_NEO4J_URI")
+	v.BindEnv("neo4j.username", "ORBGUARD_NEO4J_USERNAME")
+	v.BindEnv("neo4j.password", "ORBGUARD_NEO4J_PASSWORD")
+	v.BindEnv("neo4j.database", "ORBGUARD_NEO4J_DATABASE")
 	v.BindEnv("nats.enabled", "ORBGUARD_NATS_ENABLED")
 	v.BindEnv("app.environment", "ORBGUARD_APP_ENVIRONMENT")
 
