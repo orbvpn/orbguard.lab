@@ -241,32 +241,32 @@ func (r *GraphRepository) CreateRelationshipsBySharedTags(ctx context.Context, e
 	excludeList = append(excludeList, excludeTags...)
 
 	cypher := `
-		// Find indicators sharing meaningful tags (limited batch for performance)
+		// Find indicators sharing meaningful tags - efficient approach
+		// First, find common tags between indicator pairs (sample-based)
 		MATCH (i1:Indicator)
 		WHERE size(i1.tags) > 0
-		WITH i1
+		WITH i1, [tag IN i1.tags WHERE
+			NOT tag IN $exclude_tags
+			AND NOT tag STARTS WITH 'md5'
+			AND NOT tag STARTS WITH 'sha'
+			AND size(tag) > 3] AS meaningful_tags
+		WHERE size(meaningful_tags) > 0
+		WITH i1, meaningful_tags
+		LIMIT 1000
+		UNWIND meaningful_tags AS tag
+		WITH DISTINCT tag, collect(i1) AS indicators
+		WHERE size(indicators) >= 2 AND size(indicators) <= 100
+		WITH tag, indicators[0..50] AS sample
+		UNWIND sample AS i1
+		UNWIND sample AS i2
+		WITH i1, i2, collect(DISTINCT tag) AS shared
+		WHERE i1.id < i2.id AND size(shared) >= 1
+		WITH i1, i2, shared
 		LIMIT 5000
-		UNWIND i1.tags AS tag
-		WITH i1, tag
-		WHERE NOT tag IN $exclude_tags
-		  AND NOT tag STARTS WITH 'md5'
-		  AND NOT tag STARTS WITH 'sha'
-		  AND size(tag) > 3
-		WITH i1, tag
-		MATCH (i2:Indicator)
-		WHERE i2.id <> i1.id
-		  AND tag IN i2.tags
-		WITH i1, i2, collect(DISTINCT tag) AS shared_tags
-		WHERE size(shared_tags) >= 2
-		WITH i1, i2, shared_tags, size(shared_tags) as tag_count
-		ORDER BY tag_count DESC
-		WITH i1, collect({other: i2, tags: shared_tags, count: tag_count})[0..$max_per] AS connections
-		UNWIND connections AS conn
-		WITH i1, conn.other AS target, conn.tags AS tags, conn.count AS cnt
-		MERGE (i1)-[r:SHARES_TAGS]->(target)
-		SET r.shared_tags = tags,
-		    r.tag_count = cnt,
-		    r.confidence = toFloat(cnt) / 10.0,
+		MERGE (i1)-[r:SHARES_TAGS]-(i2)
+		SET r.shared_tags = shared,
+		    r.tag_count = size(shared),
+		    r.confidence = toFloat(size(shared)) / 10.0,
 		    r.created_at = timestamp()
 		RETURN count(r) as created`
 
