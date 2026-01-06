@@ -142,14 +142,25 @@ func (s *GraphService) syncIndicators(ctx context.Context) (int, error) {
 		return 0, nil
 	}
 
-	// Sync in batches
-	batchSize := 500
+	// Use smaller batch size for DB fetch and even smaller for Neo4j writes
+	fetchBatchSize := 1000
+	neo4jBatchSize := 100 // Smaller batches for Neo4j to avoid timeouts
 	offset := 0
 	totalCount := 0
+	failedBatches := 0
+	maxFailedBatches := 5 // Stop if too many consecutive failures
 
 	for {
+		// Check if context is cancelled
+		select {
+		case <-ctx.Done():
+			s.logger.Warn().Int("synced", totalCount).Msg("sync cancelled")
+			return totalCount, ctx.Err()
+		default:
+		}
+
 		filter := repository.IndicatorFilter{
-			Limit:  batchSize,
+			Limit:  fetchBatchSize,
 			Offset: offset,
 		}
 		indicators, _, err := s.sqlRepos.Indicators.List(ctx, filter)
@@ -161,14 +172,21 @@ func (s *GraphService) syncIndicators(ctx context.Context) (int, error) {
 			break
 		}
 
+		// Convert to nodes
+		nodes := make([]*models.IndicatorNode, 0, len(indicators))
+		campaignLinks := make([]struct {
+			indicatorID uuid.UUID
+			campaignID  uuid.UUID
+			confidence  float64
+		}, 0)
+
 		for _, ind := range indicators {
-			// Get source name from sources array
 			sourceName := ""
 			if len(ind.Sources) > 0 {
 				sourceName = ind.Sources[0].SourceName
 			}
 
-			node := &models.IndicatorNode{
+			nodes = append(nodes, &models.IndicatorNode{
 				ID:         ind.ID,
 				Type:       ind.Type,
 				Value:      ind.Value,
@@ -178,26 +196,72 @@ func (s *GraphService) syncIndicators(ctx context.Context) (int, error) {
 				LastSeen:   ind.LastSeen,
 				Tags:       ind.Tags,
 				Source:     sourceName,
+			})
+
+			if ind.CampaignID != nil && *ind.CampaignID != uuid.Nil {
+				campaignLinks = append(campaignLinks, struct {
+					indicatorID uuid.UUID
+					campaignID  uuid.UUID
+					confidence  float64
+				}{ind.ID, *ind.CampaignID, ind.Confidence})
+			}
+		}
+
+		// Batch create indicators in smaller chunks
+		for i := 0; i < len(nodes); i += neo4jBatchSize {
+			end := i + neo4jBatchSize
+			if end > len(nodes) {
+				end = len(nodes)
 			}
 
-			if err := s.graphRepo.CreateIndicator(ctx, node); err != nil {
-				s.logger.Warn().Err(err).Str("indicator", ind.Value).Msg("failed to sync indicator")
+			batch := nodes[i:end]
+
+			// Create a timeout context for this batch
+			batchCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+			count, err := s.graphRepo.CreateIndicatorsBatch(batchCtx, batch)
+			cancel()
+
+			if err != nil {
+				failedBatches++
+				s.logger.Warn().
+					Err(err).
+					Int("batch_start", offset+i).
+					Int("batch_size", len(batch)).
+					Int("failed_batches", failedBatches).
+					Msg("failed to sync indicator batch")
+
+				if failedBatches >= maxFailedBatches {
+					s.logger.Error().
+						Int("synced", totalCount).
+						Int("failed_batches", failedBatches).
+						Msg("too many failed batches, stopping sync")
+					return totalCount, fmt.Errorf("too many failed batches: %d", failedBatches)
+				}
 				continue
 			}
 
-			// Create campaign relationship if exists
-			if ind.CampaignID != nil && *ind.CampaignID != uuid.Nil {
-				if err := s.graphRepo.LinkIndicatorToCampaign(ctx, ind.ID, *ind.CampaignID, ind.Confidence); err != nil {
-					s.logger.Warn().Err(err).Msg("failed to link indicator to campaign")
-				}
-			}
-
-			totalCount++
+			failedBatches = 0 // Reset on success
+			totalCount += count
 		}
 
-		offset += batchSize
+		// Create campaign relationships (these are typically few)
+		for _, link := range campaignLinks {
+			linkCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+			if err := s.graphRepo.LinkIndicatorToCampaign(linkCtx, link.indicatorID, link.campaignID, link.confidence); err != nil {
+				s.logger.Warn().Err(err).Msg("failed to link indicator to campaign")
+			}
+			cancel()
+		}
 
-		if len(indicators) < batchSize {
+		s.logger.Info().
+			Int("offset", offset).
+			Int("batch_count", len(indicators)).
+			Int("total_synced", totalCount).
+			Msg("sync progress")
+
+		offset += fetchBatchSize
+
+		if len(indicators) < fetchBatchSize {
 			break
 		}
 	}

@@ -52,6 +52,64 @@ func (r *GraphRepository) CreateIndicator(ctx context.Context, indicator *models
 	return nil
 }
 
+// CreateIndicatorsBatch creates multiple indicator nodes in a single transaction
+func (r *GraphRepository) CreateIndicatorsBatch(ctx context.Context, indicators []*models.IndicatorNode) (int, error) {
+	if len(indicators) == 0 {
+		return 0, nil
+	}
+
+	// Build batch parameters
+	batch := make([]map[string]interface{}, 0, len(indicators))
+	for _, ind := range indicators {
+		batch = append(batch, map[string]interface{}{
+			"id":         ind.ID.String(),
+			"type":       string(ind.Type),
+			"value":      ind.Value,
+			"severity":   string(ind.Severity),
+			"confidence": ind.Confidence,
+			"first_seen": ind.FirstSeen.Unix(),
+			"last_seen":  ind.LastSeen.Unix(),
+			"tags":       ind.Tags,
+			"source":     ind.Source,
+		})
+	}
+
+	cypher := `
+		UNWIND $batch AS ind
+		MERGE (i:Indicator {id: ind.id})
+		SET i.type = ind.type,
+			i.value = ind.value,
+			i.severity = ind.severity,
+			i.confidence = ind.confidence,
+			i.first_seen = ind.first_seen,
+			i.last_seen = ind.last_seen,
+			i.tags = ind.tags,
+			i.source = ind.source,
+			i.updated_at = timestamp()
+		RETURN count(i) as created`
+
+	result, err := r.client.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (interface{}, error) {
+		res, err := tx.Run(ctx, cypher, map[string]interface{}{"batch": batch})
+		if err != nil {
+			return 0, err
+		}
+		if res.Next(ctx) {
+			if count, ok := res.Record().Get("created"); ok {
+				if c, ok := count.(int64); ok {
+					return int(c), nil
+				}
+			}
+		}
+		return len(batch), nil
+	})
+
+	if err != nil {
+		return 0, fmt.Errorf("failed to batch create indicators: %w", err)
+	}
+
+	return result.(int), nil
+}
+
 // CreateCampaign creates or updates a campaign node
 func (r *GraphRepository) CreateCampaign(ctx context.Context, campaign *models.CampaignNode) error {
 	params := map[string]interface{}{
