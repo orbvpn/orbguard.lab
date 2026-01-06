@@ -142,21 +142,22 @@ type AggregationConfig struct {
 }
 
 type SourcesConfig struct {
-	URLhaus           SourceConfig `mapstructure:"urlhaus"`
-	ThreatFox         SourceConfig `mapstructure:"threatfox"`
-	MalwareBazaar     SourceConfig `mapstructure:"malwarebazaar"`
-	FeodoTracker      SourceConfig `mapstructure:"feodotracker"`
-	SSLBlacklist      SourceConfig `mapstructure:"sslblacklist"`
-	OpenPhish         SourceConfig `mapstructure:"openphish"`
-	PhishTank         SourceConfig `mapstructure:"phishtank"`
+	URLhaus            SourceConfig `mapstructure:"urlhaus"`
+	ThreatFox          SourceConfig `mapstructure:"threatfox"`
+	MalwareBazaar      SourceConfig `mapstructure:"malwarebazaar"`
+	FeodoTracker       SourceConfig `mapstructure:"feodotracker"`
+	SSLBlacklist       SourceConfig `mapstructure:"sslblacklist"`
+	OpenPhish          SourceConfig `mapstructure:"openphish"`
+	PhishTank          SourceConfig `mapstructure:"phishtank"`
 	GoogleSafeBrowsing SourceConfig `mapstructure:"google_safebrowsing"`
-	AbuseIPDB         SourceConfig `mapstructure:"abuseipdb"`
-	GreyNoise         SourceConfig `mapstructure:"greynoise"`
-	CitizenLab        SourceConfig `mapstructure:"citizenlab"`
-	AmnestyMVT        SourceConfig `mapstructure:"amnesty_mvt"`
-	Koodous           SourceConfig `mapstructure:"koodous"`
-	AlienVaultOTX     SourceConfig `mapstructure:"alienvault_otx"`
-	VirusTotal        SourceConfig `mapstructure:"virustotal"`
+	AbuseIPDB          SourceConfig `mapstructure:"abuseipdb"`
+	GreyNoise          SourceConfig `mapstructure:"greynoise"`
+	CitizenLab         SourceConfig `mapstructure:"citizenlab"`
+	AmnestyMVT         SourceConfig `mapstructure:"amnesty_mvt"`
+	Koodous            SourceConfig `mapstructure:"koodous"`
+	AlienVaultOTX      SourceConfig `mapstructure:"alienvault_otx"`
+	VirusTotal         SourceConfig `mapstructure:"virustotal"`
+	CISAKEV            SourceConfig `mapstructure:"cisa_kev"`
 }
 
 type SourceConfig struct {
