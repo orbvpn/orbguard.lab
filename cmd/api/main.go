@@ -22,7 +22,9 @@ import (
 	"orbguard-lab/internal/infrastructure/graph"
 	"orbguard-lab/internal/sources"
 	"orbguard-lab/internal/sources/free/abusech"
+	"orbguard-lab/internal/sources/free/government"
 	"orbguard-lab/internal/sources/free/mobile"
+	"orbguard-lab/internal/sources/free/phishing"
 	"orbguard-lab/internal/streaming"
 	"orbguard-lab/pkg/logger"
 )
@@ -343,6 +345,22 @@ func registerConnectors(registry *sources.Registry, log *logger.Logger) {
 	if err := registry.Register(abusech.NewURLhausConnector(log)); err != nil {
 		log.Warn().Err(err).Msg("failed to register URLhaus connector")
 	}
+	if err := registry.Register(abusech.NewThreatFoxConnector(log)); err != nil {
+		log.Warn().Err(err).Msg("failed to register ThreatFox connector")
+	}
+
+	// Phishing connectors
+	if err := registry.Register(phishing.NewOpenPhishConnector(log)); err != nil {
+		log.Warn().Err(err).Msg("failed to register OpenPhish connector")
+	}
+	if err := registry.Register(phishing.NewSafeBrowsingConnector(log)); err != nil {
+		log.Warn().Err(err).Msg("failed to register Google Safe Browsing connector")
+	}
+
+	// Government connectors
+	if err := registry.Register(government.NewCISAKEVConnector(log)); err != nil {
+		log.Warn().Err(err).Msg("failed to register CISA KEV connector")
+	}
 
 	// Mobile/Spyware connectors (HIGH PRIORITY)
 	if err := registry.Register(mobile.NewCitizenLabConnector(log)); err != nil {
@@ -351,13 +369,6 @@ func registerConnectors(registry *sources.Registry, log *logger.Logger) {
 	if err := registry.Register(mobile.NewAmnestyMVTConnector(log)); err != nil {
 		log.Warn().Err(err).Msg("failed to register AmnestyMVT connector")
 	}
-
-	// TODO: Register more connectors:
-	// - ThreatFox
-	// - MalwareBazaar
-	// - Feodo Tracker
-	// - OpenPhish
-	// - etc.
 
 	log.Info().
 		Int("total", registry.Count()).
