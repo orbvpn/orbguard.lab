@@ -229,6 +229,171 @@ func (r *GraphRepository) LinkIndicators(ctx context.Context, source, target uui
 	return err
 }
 
+// CreateRelationshipsBySharedTags creates SHARES_TAG relationships between indicators with common tags
+// It excludes common/generic tags and limits relationships per indicator
+func (r *GraphRepository) CreateRelationshipsBySharedTags(ctx context.Context, excludeTags []string, maxPerIndicator int) (int, error) {
+	if maxPerIndicator < 1 {
+		maxPerIndicator = 10
+	}
+
+	// Build exclusion list for common tags
+	excludeList := []string{"malware", "threat", "ioc", "indicator", "suspicious", "unknown", "other"}
+	excludeList = append(excludeList, excludeTags...)
+
+	cypher := `
+		// Find indicators sharing meaningful tags
+		MATCH (i1:Indicator)
+		WHERE size(i1.tags) > 0
+		UNWIND i1.tags AS tag
+		WITH i1, tag
+		WHERE NOT tag IN $exclude_tags
+		  AND NOT tag STARTS WITH 'md5'
+		  AND NOT tag STARTS WITH 'sha'
+		  AND size(tag) > 3
+		MATCH (i2:Indicator)
+		WHERE i2.id <> i1.id
+		  AND tag IN i2.tags
+		WITH i1, i2, collect(DISTINCT tag) AS shared_tags
+		WHERE size(shared_tags) >= 2
+		WITH i1, i2, shared_tags, size(shared_tags) as tag_count
+		ORDER BY tag_count DESC
+		WITH i1, collect({other: i2, tags: shared_tags, count: tag_count})[0..$max_per] AS connections
+		UNWIND connections AS conn
+		MERGE (i1)-[r:SHARES_TAGS]->(conn.other)
+		SET r.shared_tags = conn.tags,
+		    r.tag_count = conn.count,
+		    r.confidence = toFloat(conn.count) / 10.0,
+		    r.created_at = timestamp()
+		RETURN count(r) as created`
+
+	params := map[string]interface{}{
+		"exclude_tags": excludeList,
+		"max_per":      maxPerIndicator,
+	}
+
+	result, err := r.client.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (interface{}, error) {
+		res, err := tx.Run(ctx, cypher, params)
+		if err != nil {
+			return 0, err
+		}
+		if res.Next(ctx) {
+			if count, ok := res.Record().Get("created"); ok {
+				if c, ok := count.(int64); ok {
+					return int(c), nil
+				}
+			}
+		}
+		return 0, nil
+	})
+
+	if err != nil {
+		return 0, fmt.Errorf("failed to create tag relationships: %w", err)
+	}
+
+	return result.(int), nil
+}
+
+// CreateRelationshipsBySource creates SAME_SOURCE relationships between indicators from the same source
+func (r *GraphRepository) CreateRelationshipsBySource(ctx context.Context, source string, maxPerIndicator int) (int, error) {
+	if maxPerIndicator < 1 {
+		maxPerIndicator = 5
+	}
+
+	cypher := `
+		MATCH (i1:Indicator {source: $source})
+		MATCH (i2:Indicator {source: $source})
+		WHERE i1.id < i2.id
+		  AND i1.severity = i2.severity
+		WITH i1, i2
+		LIMIT 10000
+		MERGE (i1)-[r:SAME_SOURCE]->(i2)
+		SET r.source = $source,
+		    r.confidence = 0.3,
+		    r.created_at = timestamp()
+		RETURN count(r) as created`
+
+	params := map[string]interface{}{
+		"source":  source,
+		"max_per": maxPerIndicator,
+	}
+
+	result, err := r.client.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (interface{}, error) {
+		res, err := tx.Run(ctx, cypher, params)
+		if err != nil {
+			return 0, err
+		}
+		if res.Next(ctx) {
+			if count, ok := res.Record().Get("created"); ok {
+				if c, ok := count.(int64); ok {
+					return int(c), nil
+				}
+			}
+		}
+		return 0, nil
+	})
+
+	if err != nil {
+		return 0, fmt.Errorf("failed to create source relationships: %w", err)
+	}
+
+	return result.(int), nil
+}
+
+// CreateRelationshipsByTimeWindow creates TEMPORAL_CORRELATION relationships for indicators seen close together
+func (r *GraphRepository) CreateRelationshipsByTimeWindow(ctx context.Context, windowSeconds int64, maxPerIndicator int) (int, error) {
+	if windowSeconds < 1 {
+		windowSeconds = 3600 // 1 hour default
+	}
+	if maxPerIndicator < 1 {
+		maxPerIndicator = 5
+	}
+
+	cypher := `
+		MATCH (i1:Indicator)
+		WHERE i1.first_seen > 0
+		MATCH (i2:Indicator)
+		WHERE i2.id <> i1.id
+		  AND i2.first_seen > 0
+		  AND abs(i1.first_seen - i2.first_seen) <= $window
+		  AND i1.type = i2.type
+		  AND i1.severity = i2.severity
+		WITH i1, i2, abs(i1.first_seen - i2.first_seen) as time_diff
+		ORDER BY time_diff
+		WITH i1, collect({other: i2, diff: time_diff})[0..$max_per] AS connections
+		UNWIND connections AS conn
+		MERGE (i1)-[r:TEMPORAL_CORRELATION]->(conn.other)
+		SET r.time_diff_seconds = conn.diff,
+		    r.confidence = 1.0 - (toFloat(conn.diff) / toFloat($window)),
+		    r.created_at = timestamp()
+		RETURN count(r) as created`
+
+	params := map[string]interface{}{
+		"window":  windowSeconds,
+		"max_per": maxPerIndicator,
+	}
+
+	result, err := r.client.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (interface{}, error) {
+		res, err := tx.Run(ctx, cypher, params)
+		if err != nil {
+			return 0, err
+		}
+		if res.Next(ctx) {
+			if count, ok := res.Record().Get("created"); ok {
+				if c, ok := count.(int64); ok {
+					return int(c), nil
+				}
+			}
+		}
+		return 0, nil
+	})
+
+	if err != nil {
+		return 0, fmt.Errorf("failed to create temporal relationships: %w", err)
+	}
+
+	return result.(int), nil
+}
+
 // FindRelatedIndicators finds indicators related to a given indicator
 func (r *GraphRepository) FindRelatedIndicators(ctx context.Context, indicatorID uuid.UUID, maxDepth, limit int) ([]models.RelatedIndicator, error) {
 	if maxDepth < 1 {

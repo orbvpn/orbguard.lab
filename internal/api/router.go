@@ -254,8 +254,9 @@ func (r *Router) Setup() http.Handler {
 			// Relationship management
 			graph.Post("/relationship", r.handlers.Graph.CreateRelationship)
 
-			// Sync and stats
+			// Sync, relationship building, and stats
 			graph.Post("/sync", r.handlers.Graph.SyncFromPostgres)
+			graph.Post("/build-relationships", r.handlers.Graph.BuildRelationships)
 			graph.Get("/stats", r.handlers.Graph.GetStats)
 		})
 

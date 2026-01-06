@@ -250,6 +250,18 @@ type CampaignDetection struct {
 	SuggestedActor  string            `json:"suggested_actor,omitempty"`
 }
 
+// RelationshipBuildResult represents the result of auto-building relationships
+type RelationshipBuildResult struct {
+	TotalCreated         int           `json:"total_created"`
+	TagRelationships     int           `json:"tag_relationships"`
+	SourceRelationships  int           `json:"source_relationships"`
+	TemporalRelationships int          `json:"temporal_relationships"`
+	StartedAt            time.Time     `json:"started_at"`
+	CompletedAt          time.Time     `json:"completed_at"`
+	Duration             time.Duration `json:"duration"`
+	Errors               []string      `json:"errors,omitempty"`
+}
+
 // TimeRange represents a time range
 type TimeRange struct {
 	Start time.Time `json:"start"`

@@ -251,6 +251,27 @@ func (h *GraphHandler) SyncFromPostgres(w http.ResponseWriter, r *http.Request) 
 	})
 }
 
+// BuildRelationships triggers auto-building of relationships based on shared tags
+// @Summary Build relationships
+// @Description Auto-create relationships between indicators based on shared tags, sources, and temporal patterns
+// @Tags graph
+// @Accept json
+// @Produce json
+// @Success 200 {object} models.RelationshipBuildResult
+// @Router /api/v1/graph/build-relationships [post]
+func (h *GraphHandler) BuildRelationships(w http.ResponseWriter, r *http.Request) {
+	h.logger.Info().Msg("starting relationship building")
+
+	result, err := h.graphService.BuildRelationships(r.Context())
+	if err != nil {
+		h.logger.Error().Err(err).Msg("failed to build relationships")
+		h.respondError(w, http.StatusInternalServerError, "failed to build relationships")
+		return
+	}
+
+	h.respondJSON(w, http.StatusOK, result)
+}
+
 // GetTemporalCorrelation finds indicators that appeared around the same time
 // @Summary Get temporal correlation
 // @Description Find indicators correlated by time proximity

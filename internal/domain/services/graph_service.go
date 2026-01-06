@@ -431,6 +431,41 @@ func (s *GraphService) CreateRelationship(ctx context.Context, sourceID, targetI
 	return s.graphRepo.LinkIndicators(ctx, sourceID, targetID, relType, confidence)
 }
 
+// BuildRelationships creates relationships between indicators based on various criteria
+func (s *GraphService) BuildRelationships(ctx context.Context) (*models.RelationshipBuildResult, error) {
+	s.logger.Info().Msg("starting relationship building")
+	start := time.Now()
+
+	result := &models.RelationshipBuildResult{
+		StartedAt: start,
+	}
+
+	// Create relationships by shared tags (most valuable)
+	s.logger.Info().Msg("creating relationships by shared tags")
+	tagCtx, tagCancel := context.WithTimeout(ctx, 5*time.Minute)
+	tagCount, err := s.graphRepo.CreateRelationshipsBySharedTags(tagCtx, nil, 10)
+	tagCancel()
+	if err != nil {
+		s.logger.Warn().Err(err).Msg("failed to create tag relationships")
+		result.Errors = append(result.Errors, err.Error())
+	} else {
+		result.TagRelationships = tagCount
+		s.logger.Info().Int("count", tagCount).Msg("tag relationships created")
+	}
+
+	result.TotalCreated = result.TagRelationships
+	result.Duration = time.Since(start)
+	result.CompletedAt = time.Now()
+
+	s.logger.Info().
+		Int("total", result.TotalCreated).
+		Int("by_tags", result.TagRelationships).
+		Dur("duration", result.Duration).
+		Msg("relationship building complete")
+
+	return result, nil
+}
+
 // BulkSync syncs a batch of indicators to the graph
 func (s *GraphService) BulkSync(ctx context.Context, indicators []*models.Indicator) error {
 	s.logger.Info().Int("count", len(indicators)).Msg("bulk syncing indicators to graph")
