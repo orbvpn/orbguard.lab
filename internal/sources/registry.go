@@ -148,6 +148,12 @@ func (r *Registry) ConfigureFromSourcesConfig(cfg config.SourcesConfig) {
 		"alienvault_otx":      cfg.AlienVaultOTX,
 		"virustotal":          cfg.VirusTotal,
 		"cisa_kev":            cfg.CISAKEV,
+		// Phase 23 - Additional Threat Sources
+		"spamhaus":        cfg.Spamhaus,
+		"urlscan":         cfg.URLScan,
+		"hybrid_analysis": cfg.HybridAnalysis,
+		"misp_feeds":      cfg.MISPFeeds,
+		"shodan":          cfg.Shodan,
 	}
 
 	// Debug: log if ThreatFox API key is configured

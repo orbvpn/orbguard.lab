@@ -158,6 +158,12 @@ type SourcesConfig struct {
 	AlienVaultOTX      SourceConfig `mapstructure:"alienvault_otx"`
 	VirusTotal         SourceConfig `mapstructure:"virustotal"`
 	CISAKEV            SourceConfig `mapstructure:"cisa_kev"`
+	// Phase 23 - Additional Threat Sources
+	Spamhaus       SourceConfig `mapstructure:"spamhaus"`
+	URLScan        SourceConfig `mapstructure:"urlscan"`
+	HybridAnalysis SourceConfig `mapstructure:"hybrid_analysis"`
+	MISPFeeds      SourceConfig `mapstructure:"misp_feeds"`
+	Shodan         SourceConfig `mapstructure:"shodan"`
 }
 
 type SourceConfig struct {
@@ -291,6 +297,10 @@ func Load(configPath string) (*Config, error) {
 	v.BindEnv("sources.virustotal.api_key", "ORBGUARD_VIRUSTOTAL_API_KEY")
 	v.BindEnv("sources.alienvault_otx.api_key", "ORBGUARD_ALIENVAULT_OTX_API_KEY")
 	v.BindEnv("sources.koodous.api_key", "ORBGUARD_KOODOUS_API_KEY")
+	// Phase 23 - Additional source API keys
+	v.BindEnv("sources.urlscan.api_key", "ORBGUARD_URLSCAN_API_KEY")
+	v.BindEnv("sources.hybrid_analysis.api_key", "ORBGUARD_HYBRID_ANALYSIS_API_KEY")
+	v.BindEnv("sources.shodan.api_key", "ORBGUARD_SHODAN_API_KEY")
 
 	// Read config file
 	if err := v.ReadInConfig(); err != nil {

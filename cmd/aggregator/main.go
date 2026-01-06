@@ -15,9 +15,13 @@ import (
 	"orbguard-lab/internal/infrastructure/database/repository"
 	"orbguard-lab/internal/sources"
 	"orbguard-lab/internal/sources/free/abusech"
+	"orbguard-lab/internal/sources/free/analysis"
+	"orbguard-lab/internal/sources/free/blocklists"
 	"orbguard-lab/internal/sources/free/government"
 	"orbguard-lab/internal/sources/free/mobile"
 	"orbguard-lab/internal/sources/free/phishing"
+	"orbguard-lab/internal/sources/misp"
+	"orbguard-lab/internal/sources/premium"
 	"orbguard-lab/pkg/logger"
 )
 
@@ -394,6 +398,31 @@ func registerConnectors(registry *sources.Registry, log *logger.Logger) {
 	}
 	if err := registry.Register(mobile.NewAmnestyMVTConnector(log)); err != nil {
 		log.Warn().Err(err).Msg("failed to register AmnestyMVT connector")
+	}
+
+	// Phase 23 - Additional Threat Sources
+
+	// Blocklists (free, no API key required)
+	if err := registry.Register(blocklists.NewSpamhausConnector(log)); err != nil {
+		log.Warn().Err(err).Msg("failed to register Spamhaus connector")
+	}
+
+	// Analysis connectors
+	if err := registry.Register(analysis.NewURLScanConnector(log)); err != nil {
+		log.Warn().Err(err).Msg("failed to register URLScan.io connector")
+	}
+	if err := registry.Register(analysis.NewHybridAnalysisConnector(log)); err != nil {
+		log.Warn().Err(err).Msg("failed to register Hybrid Analysis connector")
+	}
+
+	// MISP feeds (free, no API key required)
+	if err := registry.Register(misp.NewMISPFeedsConnector(log)); err != nil {
+		log.Warn().Err(err).Msg("failed to register MISP feeds connector")
+	}
+
+	// Premium connectors (require API keys)
+	if err := registry.Register(premium.NewShodanConnector(log)); err != nil {
+		log.Warn().Err(err).Msg("failed to register Shodan connector")
 	}
 
 	log.Info().

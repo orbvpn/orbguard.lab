@@ -12,7 +12,10 @@ type IndicatorType string
 const (
 	IndicatorTypeDomain      IndicatorType = "domain"
 	IndicatorTypeIP          IndicatorType = "ip"
+	IndicatorTypeIPv4        IndicatorType = "ipv4"
 	IndicatorTypeIPv6        IndicatorType = "ipv6"
+	IndicatorTypeCIDR        IndicatorType = "cidr"
+	IndicatorTypeASN         IndicatorType = "asn"
 	IndicatorTypeHash        IndicatorType = "hash"
 	IndicatorTypeURL         IndicatorType = "url"
 	IndicatorTypeProcess     IndicatorType = "process"
@@ -182,8 +185,14 @@ func ParseIndicatorType(s string) IndicatorType {
 		return IndicatorTypeDomain
 	case "ip":
 		return IndicatorTypeIP
+	case "ipv4":
+		return IndicatorTypeIPv4
 	case "ipv6":
 		return IndicatorTypeIPv6
+	case "cidr":
+		return IndicatorTypeCIDR
+	case "asn":
+		return IndicatorTypeASN
 	case "hash":
 		return IndicatorTypeHash
 	case "url":
