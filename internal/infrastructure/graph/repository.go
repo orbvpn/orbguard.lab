@@ -537,12 +537,27 @@ func (r *GraphRepository) Traverse(ctx context.Context, req *models.GraphTravers
 		}
 	}
 
-	cypher := fmt.Sprintf(`
+	// Build proper Cypher path pattern
+	var cypher string
+	if direction == "->" {
+		cypher = fmt.Sprintf(`
 		MATCH (start {id: $start_id})
-		MATCH path = (start)%s[r%s*1..%d]%s(end)
+		MATCH path = (start)-[r%s*1..%d]->(end)
 		RETURN nodes(path) as nodes, relationships(path) as rels
-		LIMIT $limit`,
-		direction[:len(direction)-1], relFilter, req.MaxDepth, direction[len(direction)-1:])
+		LIMIT $limit`, relFilter, req.MaxDepth)
+	} else if direction == "<-" {
+		cypher = fmt.Sprintf(`
+		MATCH (start {id: $start_id})
+		MATCH path = (start)<-[r%s*1..%d]-(end)
+		RETURN nodes(path) as nodes, relationships(path) as rels
+		LIMIT $limit`, relFilter, req.MaxDepth)
+	} else {
+		cypher = fmt.Sprintf(`
+		MATCH (start {id: $start_id})
+		MATCH path = (start)-[r%s*1..%d]-(end)
+		RETURN nodes(path) as nodes, relationships(path) as rels
+		LIMIT $limit`, relFilter, req.MaxDepth)
+	}
 
 	params := map[string]interface{}{
 		"start_id": req.StartNodeID,

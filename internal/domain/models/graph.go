@@ -358,9 +358,9 @@ const (
 
 	// Find related indicators
 	CypherFindRelated = `
-		MATCH (i:Indicator {id: $id})-[r*1..%d]-(related:Indicator)
+		MATCH path = (i:Indicator {id: $id})-[*1..%d]-(related:Indicator)
 		WHERE i <> related
-		RETURN DISTINCT related, length(r) as distance
+		RETURN DISTINCT related, length(path) as distance
 		ORDER BY distance
 		LIMIT $limit`
 
