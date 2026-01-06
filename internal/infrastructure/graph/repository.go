@@ -259,10 +259,11 @@ func (r *GraphRepository) CreateRelationshipsBySharedTags(ctx context.Context, e
 		ORDER BY tag_count DESC
 		WITH i1, collect({other: i2, tags: shared_tags, count: tag_count})[0..$max_per] AS connections
 		UNWIND connections AS conn
-		MERGE (i1)-[r:SHARES_TAGS]->(conn.other)
-		SET r.shared_tags = conn.tags,
-		    r.tag_count = conn.count,
-		    r.confidence = toFloat(conn.count) / 10.0,
+		WITH i1, conn.other AS target, conn.tags AS tags, conn.count AS cnt
+		MERGE (i1)-[r:SHARES_TAGS]->(target)
+		SET r.shared_tags = tags,
+		    r.tag_count = cnt,
+		    r.confidence = toFloat(cnt) / 10.0,
 		    r.created_at = timestamp()
 		RETURN count(r) as created`
 
