@@ -124,6 +124,8 @@ type RawIndicator struct {
 	LastSeen    *time.Time        `json:"last_seen,omitempty"`
 	Confidence  *float64          `json:"confidence,omitempty"`
 	RawData     map[string]any    `json:"raw_data,omitempty"`
+	SourceID    string            `json:"source_id,omitempty"`
+	SourceName  string            `json:"source_name,omitempty"`
 }
 
 // DefaultSources returns the list of built-in sources

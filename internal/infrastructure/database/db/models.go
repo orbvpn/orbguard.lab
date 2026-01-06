@@ -532,6 +532,8 @@ type Indicator struct {
 	Description     pgtype.Text          `db:"description" json:"description"`
 	Tags            []string             `db:"tags" json:"tags"`
 	Platforms       []string             `db:"platforms" json:"platforms"`
+	SourceID        string               `db:"source_id" json:"source_id"`
+	SourceName      string               `db:"source_name" json:"source_name"`
 	FirstSeen       pgtype.Timestamptz   `db:"first_seen" json:"first_seen"`
 	LastSeen        pgtype.Timestamptz   `db:"last_seen" json:"last_seen"`
 	ExpiresAt       pgtype.Timestamptz   `db:"expires_at" json:"expires_at"`

@@ -77,6 +77,8 @@ func (n *Normalizer) Normalize(raw models.RawIndicator) (*models.Indicator, erro
 		Description: raw.Description,
 		Tags:        tags,
 		Platforms:   platforms,
+		SourceID:    raw.SourceID,
+		SourceName:  raw.SourceName,
 		FirstSeen:   firstSeen,
 		LastSeen:    lastSeen,
 		ReportCount: 0,

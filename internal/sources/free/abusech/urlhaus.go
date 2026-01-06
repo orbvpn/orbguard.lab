@@ -151,6 +151,8 @@ func (c *URLhausConnector) Fetch(ctx context.Context) (*models.SourceFetchResult
 			Description: fmt.Sprintf("URLhaus: %s - %s", threat, urlStatus),
 			Tags:        tags,
 			FirstSeen:   firstSeen,
+			SourceID:    c.Slug(),
+			SourceName:  c.Name(),
 			RawData: map[string]any{
 				"urlhaus_id":   urlID,
 				"url_status":   urlStatus,
@@ -172,6 +174,8 @@ func (c *URLhausConnector) Fetch(ctx context.Context) (*models.SourceFetchResult
 					Description: fmt.Sprintf("IP from URLhaus: %s", threat),
 					Tags:        append(tags, "extracted"),
 					FirstSeen:   firstSeen,
+					SourceID:    c.Slug(),
+					SourceName:  c.Name(),
 				})
 			} else {
 				result.RawIndicators = append(result.RawIndicators, models.RawIndicator{
@@ -182,6 +186,8 @@ func (c *URLhausConnector) Fetch(ctx context.Context) (*models.SourceFetchResult
 					Description: fmt.Sprintf("Domain from URLhaus: %s", threat),
 					Tags:        append(tags, "extracted"),
 					FirstSeen:   firstSeen,
+					SourceID:    c.Slug(),
+					SourceName:  c.Name(),
 				})
 			}
 		}

@@ -267,6 +267,10 @@ CREATE TABLE indicators (
     tags TEXT[],
     platforms platform_type[],
 
+    -- Source (required)
+    source_id TEXT NOT NULL,
+    source_name TEXT NOT NULL,
+
     -- Temporal
     first_seen TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     last_seen TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),

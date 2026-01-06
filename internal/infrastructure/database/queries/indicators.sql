@@ -173,13 +173,15 @@ RETURNING id, value, value_hash, type::text, severity::text, confidence, descrip
 INSERT INTO indicators (
     value, value_hash, type, severity, confidence, description,
     tags, platforms, first_seen, last_seen,
+    source_id, source_name,
     campaign_id, threat_actor_id, malware_family_id,
     mitre_techniques, mitre_tactics, cve_ids
 ) VALUES (
     $1, $2, $3, $4, $5, $6,
     $7, $8, $9, $10,
-    $11, $12, $13,
-    $14, $15, $16
+    $11, $12,
+    $13, $14, $15,
+    $16, $17, $18
 )
 ON CONFLICT (value_hash) DO UPDATE SET
     last_seen = EXCLUDED.last_seen,
@@ -188,6 +190,7 @@ ON CONFLICT (value_hash) DO UPDATE SET
     updated_at = NOW()
 RETURNING id, value, value_hash, type::text, severity::text, confidence, description,
     tags, platforms::text[], first_seen, last_seen, expires_at,
+    source_id, source_name,
     campaign_id, threat_actor_id, malware_family_id,
     mitre_techniques, mitre_tactics, cve_ids, report_count, source_count, metadata,
     graph_node_id, created_at, updated_at;

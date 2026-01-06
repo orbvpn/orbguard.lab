@@ -158,6 +158,8 @@ func (c *ThreatFoxConnector) parseIOCs(iocs []threatFoxIOC) ([]models.RawIndicat
 			Severity:    mapThreatFoxSeverity(ioc.ThreatType, ioc.ConfidenceLevel),
 			Description: formatDescription(ioc),
 			Tags:        buildTags(ioc),
+			SourceID:    threatFoxSlug,
+			SourceName:  "ThreatFox",
 			RawData: map[string]any{
 				"id":               ioc.ID,
 				"threat_type":      ioc.ThreatType,

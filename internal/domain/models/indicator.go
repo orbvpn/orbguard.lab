@@ -59,6 +59,10 @@ type Indicator struct {
 	Tags        []string      `json:"tags,omitempty" db:"tags"`
 	Platforms   []Platform    `json:"platforms,omitempty" db:"platforms"`
 
+	// Source (required for storage)
+	SourceID   string `json:"source_id" db:"source_id"`
+	SourceName string `json:"source_name" db:"source_name"`
+
 	// Temporal
 	FirstSeen time.Time  `json:"first_seen" db:"first_seen"`
 	LastSeen  time.Time  `json:"last_seen" db:"last_seen"`

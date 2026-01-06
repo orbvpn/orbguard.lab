@@ -1433,13 +1433,15 @@ const upsertIndicator = `-- name: UpsertIndicator :one
 INSERT INTO indicators (
     value, value_hash, type, severity, confidence, description,
     tags, platforms, first_seen, last_seen,
+    source_id, source_name,
     campaign_id, threat_actor_id, malware_family_id,
     mitre_techniques, mitre_tactics, cve_ids
 ) VALUES (
     $1, $2, $3, $4, $5, $6,
     $7, $8, $9, $10,
-    $11, $12, $13,
-    $14, $15, $16
+    $11, $12,
+    $13, $14, $15,
+    $16, $17, $18
 )
 ON CONFLICT (value_hash) DO UPDATE SET
     last_seen = EXCLUDED.last_seen,
@@ -1448,6 +1450,7 @@ ON CONFLICT (value_hash) DO UPDATE SET
     updated_at = NOW()
 RETURNING id, value, value_hash, type::text, severity::text, confidence, description,
     tags, platforms::text[], first_seen, last_seen, expires_at,
+    source_id, source_name,
     campaign_id, threat_actor_id, malware_family_id,
     mitre_techniques, mitre_tactics, cve_ids, report_count, source_count, metadata,
     graph_node_id, created_at, updated_at
@@ -1464,6 +1467,8 @@ type UpsertIndicatorParams struct {
 	Platforms       []string             `db:"platforms" json:"platforms"`
 	FirstSeen       pgtype.Timestamptz   `db:"first_seen" json:"first_seen"`
 	LastSeen        pgtype.Timestamptz   `db:"last_seen" json:"last_seen"`
+	SourceID        string               `db:"source_id" json:"source_id"`
+	SourceName      string               `db:"source_name" json:"source_name"`
 	CampaignID      pgtype.UUID          `db:"campaign_id" json:"campaign_id"`
 	ThreatActorID   pgtype.UUID          `db:"threat_actor_id" json:"threat_actor_id"`
 	MalwareFamilyID pgtype.UUID          `db:"malware_family_id" json:"malware_family_id"`
@@ -1485,6 +1490,8 @@ type UpsertIndicatorRow struct {
 	FirstSeen       pgtype.Timestamptz `db:"first_seen" json:"first_seen"`
 	LastSeen        pgtype.Timestamptz `db:"last_seen" json:"last_seen"`
 	ExpiresAt       pgtype.Timestamptz `db:"expires_at" json:"expires_at"`
+	SourceID        string             `db:"source_id" json:"source_id"`
+	SourceName      string             `db:"source_name" json:"source_name"`
 	CampaignID      pgtype.UUID        `db:"campaign_id" json:"campaign_id"`
 	ThreatActorID   pgtype.UUID        `db:"threat_actor_id" json:"threat_actor_id"`
 	MalwareFamilyID pgtype.UUID        `db:"malware_family_id" json:"malware_family_id"`
@@ -1511,6 +1518,8 @@ func (q *Queries) UpsertIndicator(ctx context.Context, arg *UpsertIndicatorParam
 		arg.Platforms,
 		arg.FirstSeen,
 		arg.LastSeen,
+		arg.SourceID,
+		arg.SourceName,
 		arg.CampaignID,
 		arg.ThreatActorID,
 		arg.MalwareFamilyID,
@@ -1532,6 +1541,8 @@ func (q *Queries) UpsertIndicator(ctx context.Context, arg *UpsertIndicatorParam
 		&i.FirstSeen,
 		&i.LastSeen,
 		&i.ExpiresAt,
+		&i.SourceID,
+		&i.SourceName,
 		&i.CampaignID,
 		&i.ThreatActorID,
 		&i.MalwareFamilyID,

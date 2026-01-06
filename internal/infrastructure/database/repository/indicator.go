@@ -124,6 +124,16 @@ func (r *IndicatorRepository) Upsert(ctx context.Context, i *models.Indicator) (
 		i.LastSeen = now
 	}
 
+	// Ensure source_id and source_name have defaults if not set
+	sourceID := i.SourceID
+	if sourceID == "" {
+		sourceID = "unknown"
+	}
+	sourceName := i.SourceName
+	if sourceName == "" {
+		sourceName = "Unknown Source"
+	}
+
 	params := &db.UpsertIndicatorParams{
 		Value:           i.Value,
 		ValueHash:       i.ValueHash,
@@ -135,6 +145,8 @@ func (r *IndicatorRepository) Upsert(ctx context.Context, i *models.Indicator) (
 		Platforms:       platformsToStrings(i.Platforms),
 		FirstSeen:       timeToTimestamptz(i.FirstSeen),
 		LastSeen:        timeToTimestamptz(i.LastSeen),
+		SourceID:        sourceID,
+		SourceName:      sourceName,
 		CampaignID:      uuidToNullUUID(i.CampaignID),
 		ThreatActorID:   uuidToNullUUID(i.ThreatActorID),
 		MalwareFamilyID: uuidToNullUUID(i.MalwareFamilyID),
@@ -865,7 +877,7 @@ func createIndicatorRowToModel(r *db.CreateIndicatorRow) *models.Indicator {
 
 // upsertIndicatorRowToModel converts a UpsertIndicatorRow to a model
 func upsertIndicatorRowToModel(r *db.UpsertIndicatorRow) *models.Indicator {
-	return convertIndicatorRow(
+	ind := convertIndicatorRow(
 		r.ID, r.Value, r.ValueHash, r.Type, r.Severity,
 		r.Confidence, r.Description, r.Tags, r.Platforms,
 		r.FirstSeen, r.LastSeen, r.ExpiresAt,
@@ -874,6 +886,10 @@ func upsertIndicatorRowToModel(r *db.UpsertIndicatorRow) *models.Indicator {
 		r.ReportCount, r.SourceCount, r.Metadata, r.GraphNodeID,
 		r.CreatedAt, r.UpdatedAt,
 	)
+	// Set source fields from the row
+	ind.SourceID = r.SourceID
+	ind.SourceName = r.SourceName
+	return ind
 }
 
 // searchIndicatorsRowToModel converts a SearchIndicatorsRow to a model
