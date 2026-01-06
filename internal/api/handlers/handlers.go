@@ -40,6 +40,10 @@ type Handlers struct {
 	Forensics       *ForensicsHandler
 	Footprint       *FootprintHandler
 	DesktopSecurity *DesktopSecurityHandler
+	Webhooks        *WebhookHandler
+	Playbooks       *PlaybookHandler
+	Analytics       *AnalyticsHandler
+	Integrations    *IntegrationsHandler
 }
 
 // Dependencies holds dependencies for handlers
@@ -76,6 +80,10 @@ type Dependencies struct {
 	NetworkMonitor        *desktop_security.NetworkMonitor
 	BrowserScanner        *desktop_security.BrowserExtensionScanner
 	VTClient              *desktop_security.VirusTotalClient
+	WebhookService        *services.WebhookService
+	PlaybookService       *services.PlaybookService
+	AnalyticsService      *services.AnalyticsService
+	IntegrationService    *services.IntegrationService
 }
 
 // NewHandlers creates all handlers
@@ -115,5 +123,9 @@ func NewHandlers(deps Dependencies) *Handlers {
 			VTClient:           deps.VTClient,
 			Logger:             deps.Logger,
 		}),
+		Webhooks:     NewWebhookHandler(deps.Logger, deps.WebhookService),
+		Playbooks:    NewPlaybookHandler(deps.Logger, deps.PlaybookService),
+		Analytics:    NewAnalyticsHandler(deps.Logger, deps.AnalyticsService),
+		Integrations: NewIntegrationsHandler(deps.IntegrationService),
 	}
 }

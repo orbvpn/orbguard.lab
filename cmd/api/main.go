@@ -192,6 +192,23 @@ func main() {
 	orbnetService := services.NewOrbNetService(repos, redisCache, log)
 	log.Info().Msg("OrbNet VPN integration service initialized")
 
+	// Initialize webhook notification service
+	webhookService := services.NewWebhookService(redisCache, log, nil)
+	log.Info().Msg("webhook notification service initialized")
+
+	// Initialize automated playbook service
+	playbookService := services.NewPlaybookService(webhookService, redisCache, log, nil)
+	log.Info().Msg("automated playbook service initialized")
+
+	// Initialize analytics and reporting service
+	analyticsService := services.NewAnalyticsService(repos, redisCache, log)
+	log.Info().Msg("analytics and reporting service initialized")
+
+	// Initialize integration hub service (Slack, Teams, PagerDuty)
+	integrationService := services.NewIntegrationService()
+	defer integrationService.Stop()
+	log.Info().Msg("integration hub service initialized (Slack, Teams, PagerDuty)")
+
 	// Initialize Neo4j graph database (if enabled)
 	var graphService *services.GraphService
 	if cfg.Neo4j.Enabled {
@@ -233,6 +250,10 @@ func main() {
 		STIXTAXIIService:      stixTAXIIService,
 		EnterpriseService:     enterpriseService,
 		OrbNetService:         orbnetService,
+		WebhookService:        webhookService,
+		PlaybookService:       playbookService,
+		AnalyticsService:      analyticsService,
+		IntegrationService:    integrationService,
 	}
 	h := handlers.NewHandlers(deps)
 

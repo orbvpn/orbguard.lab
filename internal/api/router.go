@@ -644,6 +644,18 @@ func (r *Router) Setup() http.Handler {
 			desktop.Post("/scan/full", r.handlers.DesktopSecurity.FullSecurityScan)
 		})
 
+		// Webhooks endpoints
+		r.handlers.Webhooks.RegisterRoutes(api)
+
+		// Playbooks endpoints
+		r.handlers.Playbooks.RegisterRoutes(api)
+
+		// Analytics endpoints
+		r.handlers.Analytics.RegisterRoutes(api)
+
+		// Integrations endpoints
+		r.handlers.Integrations.RegisterRoutes(api)
+
 		// Admin endpoints
 		api.Route("/admin", func(admin chi.Router) {
 			// Require admin auth
