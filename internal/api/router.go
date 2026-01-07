@@ -656,6 +656,9 @@ func (r *Router) Setup() http.Handler {
 		// Integrations endpoints
 		r.handlers.Integrations.RegisterRoutes(api)
 
+		// Scam Detection endpoints (AI-powered)
+		r.handlers.ScamDetection.RegisterRoutes(api)
+
 		// Admin endpoints
 		api.Route("/admin", func(admin chi.Router) {
 			// Require admin auth

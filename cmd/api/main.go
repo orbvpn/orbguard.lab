@@ -15,6 +15,7 @@ import (
 	"orbguard-lab/internal/api/handlers"
 	"orbguard-lab/internal/config"
 	"orbguard-lab/internal/domain/services"
+	"orbguard-lab/internal/domain/services/ai"
 	grpcserver "orbguard-lab/internal/grpc/threatintel"
 	"orbguard-lab/internal/infrastructure/cache"
 	"orbguard-lab/internal/infrastructure/database"
@@ -22,10 +23,13 @@ import (
 	"orbguard-lab/internal/infrastructure/graph"
 	"orbguard-lab/internal/sources"
 	"orbguard-lab/internal/sources/free/abusech"
+	"orbguard-lab/internal/sources/free/analysis"
+	"orbguard-lab/internal/sources/free/blocklists"
 	"orbguard-lab/internal/sources/free/government"
 	"orbguard-lab/internal/sources/free/ip"
 	"orbguard-lab/internal/sources/free/mobile"
 	"orbguard-lab/internal/sources/free/phishing"
+	"orbguard-lab/internal/sources/misp"
 	"orbguard-lab/internal/sources/premium"
 	"orbguard-lab/internal/streaming"
 	"orbguard-lab/pkg/logger"
@@ -209,6 +213,10 @@ func main() {
 	defer integrationService.Stop()
 	log.Info().Msg("integration hub service initialized (Slack, Teams, PagerDuty)")
 
+	// Initialize AI-powered scam detection service
+	scamDetector := ai.NewScamDetector(log, ai.ScamDetectorConfig{})
+	log.Info().Msg("AI scam detection service initialized")
+
 	// Initialize Neo4j graph database (if enabled)
 	var graphService *services.GraphService
 	if cfg.Neo4j.Enabled {
@@ -254,6 +262,7 @@ func main() {
 		PlaybookService:       playbookService,
 		AnalyticsService:      analyticsService,
 		IntegrationService:    integrationService,
+		ScamDetector:          scamDetector,
 	}
 	h := handlers.NewHandlers(deps)
 
@@ -421,6 +430,27 @@ func registerConnectors(registry *sources.Registry, log *logger.Logger) {
 	}
 	if err := registry.Register(premium.NewKoodousConnector(log)); err != nil {
 		log.Warn().Err(err).Msg("failed to register Koodous connector")
+	}
+	if err := registry.Register(premium.NewShodanConnector(log)); err != nil {
+		log.Warn().Err(err).Msg("failed to register Shodan connector")
+	}
+
+	// Blocklist connectors
+	if err := registry.Register(blocklists.NewSpamhausConnector(log)); err != nil {
+		log.Warn().Err(err).Msg("failed to register Spamhaus connector")
+	}
+
+	// Analysis connectors
+	if err := registry.Register(analysis.NewURLScanConnector(log)); err != nil {
+		log.Warn().Err(err).Msg("failed to register URLScan connector")
+	}
+	if err := registry.Register(analysis.NewHybridAnalysisConnector(log)); err != nil {
+		log.Warn().Err(err).Msg("failed to register HybridAnalysis connector")
+	}
+
+	// MISP feed connector
+	if err := registry.Register(misp.NewMISPFeedsConnector(log)); err != nil {
+		log.Warn().Err(err).Msg("failed to register MISP feeds connector")
 	}
 
 	log.Info().

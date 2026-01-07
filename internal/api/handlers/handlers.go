@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"orbguard-lab/internal/domain/services"
+	"orbguard-lab/internal/domain/services/ai"
 	"orbguard-lab/internal/domain/services/desktop_security"
 	"orbguard-lab/internal/domain/services/digital_footprint"
 	"orbguard-lab/internal/forensics"
@@ -44,6 +45,7 @@ type Handlers struct {
 	Playbooks       *PlaybookHandler
 	Analytics       *AnalyticsHandler
 	Integrations    *IntegrationsHandler
+	ScamDetection   *ScamDetectionHandler
 }
 
 // Dependencies holds dependencies for handlers
@@ -84,6 +86,7 @@ type Dependencies struct {
 	PlaybookService       *services.PlaybookService
 	AnalyticsService      *services.AnalyticsService
 	IntegrationService    *services.IntegrationService
+	ScamDetector          *ai.ScamDetector
 }
 
 // NewHandlers creates all handlers
@@ -123,9 +126,10 @@ func NewHandlers(deps Dependencies) *Handlers {
 			VTClient:           deps.VTClient,
 			Logger:             deps.Logger,
 		}),
-		Webhooks:     NewWebhookHandler(deps.Logger, deps.WebhookService),
-		Playbooks:    NewPlaybookHandler(deps.Logger, deps.PlaybookService),
-		Analytics:    NewAnalyticsHandler(deps.Logger, deps.AnalyticsService),
-		Integrations: NewIntegrationsHandler(deps.IntegrationService),
+		Webhooks:      NewWebhookHandler(deps.Logger, deps.WebhookService),
+		Playbooks:     NewPlaybookHandler(deps.Logger, deps.PlaybookService),
+		Analytics:     NewAnalyticsHandler(deps.Logger, deps.AnalyticsService),
+		Integrations:  NewIntegrationsHandler(deps.IntegrationService),
+		ScamDetection: NewScamDetectionHandler(deps.Logger, deps.ScamDetector),
 	}
 }
