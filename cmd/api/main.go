@@ -16,6 +16,7 @@ import (
 	"orbguard-lab/internal/config"
 	"orbguard-lab/internal/domain/services"
 	"orbguard-lab/internal/domain/services/ai"
+	"orbguard-lab/internal/forensics"
 	grpcserver "orbguard-lab/internal/grpc/threatintel"
 	"orbguard-lab/internal/infrastructure/cache"
 	"orbguard-lab/internal/infrastructure/database"
@@ -217,6 +218,10 @@ func main() {
 	scamDetector := ai.NewScamDetector(log, ai.ScamDetectorConfig{})
 	log.Info().Msg("AI scam detection service initialized")
 
+	// Initialize forensics service (Pegasus/Spyware detection)
+	forensicsService := forensics.NewServiceWithCache(redisCache, log)
+	log.Info().Msg("forensics service initialized")
+
 	// Initialize Neo4j graph database (if enabled)
 	var graphService *services.GraphService
 	if cfg.Neo4j.Enabled {
@@ -263,6 +268,7 @@ func main() {
 		AnalyticsService:      analyticsService,
 		IntegrationService:    integrationService,
 		ScamDetector:          scamDetector,
+		ForensicsService:      forensicsService,
 	}
 	h := handlers.NewHandlers(deps)
 

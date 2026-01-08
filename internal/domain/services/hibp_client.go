@@ -56,6 +56,19 @@ func (c *HIBPClient) CheckEmail(ctx context.Context, email string) (*models.Brea
 		CheckedAt: time.Now(),
 	}
 
+	// Check if API key is configured
+	if c.apiKey == "" {
+		c.logger.Warn().Str("email", email).Msg("HIBP API key not configured, returning simulated response")
+		// Return simulated response for development/testing
+		response.RiskLevel = models.BreachSeverityLow
+		response.Recommendations = []string{
+			"HIBP API key not configured - this is a simulated response.",
+			"Configure ORBGUARD_SOURCES_HIBP_API_KEY for real breach checks.",
+			"Get an API key at: https://haveibeenpwned.com/API/Key",
+		}
+		return response, nil
+	}
+
 	// Get breaches for this email
 	breaches, err := c.getBreachedAccount(ctx, email)
 	if err != nil {
